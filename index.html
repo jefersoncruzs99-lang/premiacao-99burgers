@@ -85,6 +85,7 @@ const RH_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{storageKey:'prem-staff'}});
 const rh=supabase.createClient(RH_URL,RH_KEY,{auth:{storageKey:'prem-colab'}});
 const $app=document.getElementById('app');
+const CARGOS=['Star Trainee','Star Júnior','Star Pleno','Star Sênior','Líder'];
 const S={modo:null,papel:null,uid:null,email:'',tab:'ranking',mes:null,colabs:[],tipos:[],cfg:null,sel:null,novos:0,fotos:{}};
 function avatar(url,nome,cls=''){const ini=esc((nome||'?').trim().split(/\s+/).slice(0,2).map(p=>p[0]).join('').toUpperCase());return url?`<img class="av ${cls}" src="${esc(url)}" alt="${esc(nome)}">`:`<div class="av ${cls}">${ini}</div>`}
 async function loadFotos(){const m=S.colabs.filter(c=>c.foto_path);S.fotos={};if(!m.length)return;const {data}=await sb.storage.from('pt-fotos').createSignedUrls(m.map(c=>c.foto_path),3600);(data||[]).forEach(s=>{const c=m.find(x=>x.foto_path===s.path);if(c&&s.signedUrl)S.fotos[c.id]=s.signedUrl})}
@@ -262,9 +263,8 @@ async function vDias(){
 async function vColabs(){
   const cargos=[...new Set(S.colabs.map(c=>c.cargo).filter(Boolean))];
   let h=`<p class="mut">Cargo e horário de entrada de cada colaborador (a entrada vale todos os dias). Ao salvar, os dias passados são recalculados. Madrugada (ex.: 00:30) conta como o mesmo dia de trabalho.</p>
-  <datalist id="cargos">${cargos.concat(['Chapeiro','Auxiliar de cozinha','Atendente','Caixa','Entregador','Gerente','Líder de cozinha'].filter(x=>!cargos.includes(x))).map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
   <div class="card" style="overflow-x:auto"><table><tr><th>Foto</th><th>Nome</th><th>Cargo</th><th>Entrada</th><th>Ativo</th></tr>`;
-  h+=S.colabs.map(c=>`<tr><td style="white-space:nowrap"><label style="margin:0;cursor:pointer;display:inline-block" title="Trocar foto">${avatar(S.fotos[c.id],c.nome)}<input type="file" accept="image/*" data-foto="${c.id}" style="display:none"></label></td><td>${esc(c.nome)}</td><td><input list="cargos" data-g="${c.id}" value="${esc(c.cargo||'')}" placeholder="cargo" style="width:150px"></td><td><input type="time" data-e="${c.id}" value="${c.entrada_padrao?String(c.entrada_padrao).slice(0,5):''}"></td><td><input type="checkbox" data-a="${c.id}" ${c.ativo?'checked':''}></td></tr>`).join('');
+  h+=S.colabs.map(c=>`<tr><td style="white-space:nowrap"><label style="margin:0;cursor:pointer;display:inline-block" title="Trocar foto">${avatar(S.fotos[c.id],c.nome)}<input type="file" accept="image/*" data-foto="${c.id}" style="display:none"></label></td><td>${esc(c.nome)}</td><td><select data-g="${c.id}"><option value="">— cargo —</option>${CARGOS.map(g=>`<option ${g===c.cargo?'selected':''}>${g}</option>`).join('')}${c.cargo&&!CARGOS.includes(c.cargo)?`<option selected>${esc(c.cargo)}</option>`:''}</select></td><td><input type="time" data-e="${c.id}" value="${c.entrada_padrao?String(c.entrada_padrao).slice(0,5):''}"></td><td><input type="checkbox" data-a="${c.id}" ${c.ativo?'checked':''}></td></tr>`).join('');
   h+=`</table></div><button class="btn pri" id="salvar" style="padding:12px 22px;font-size:16px">Salvar tudo</button>`;
   return {html:h,bind(){
     document.querySelectorAll('[data-foto]').forEach(inp=>inp.onchange=async()=>{
