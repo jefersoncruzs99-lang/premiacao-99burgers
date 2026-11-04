@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E8A32C">
+<title>Premiação 99Burgers</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FFD400'/><text x='50' y='68' font-size='56' text-anchor='middle' font-family='Arial Black' fill='%23111'>99</text></svg>">
+<style>
+:root{--y:#E8A32C;--y2:#f6cf7e;--k:#111;--bg:#fbefd2;--card:#fff;--mut:#6b675a;--line:#ecd49a;--ok:#14803f;--bad:#c62828;--warn:#b26a00;--blue:#1d4ea1}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--k);padding-bottom:env(safe-area-inset-bottom)}
+header{background:var(--y);padding:10px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20;box-shadow:0 2px 0 var(--k)}
+.logo{height:40px;width:auto;display:block;border-radius:10px}
+.av{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--k);background:var(--y2);flex:none;display:grid;place-items:center;font-weight:900;font-size:16px;color:var(--k)}
+.av.lg{width:84px;height:84px;font-size:30px}.av.md{width:64px;height:64px;font-size:22px;margin:0 auto 6px}
+.podio .av{margin:0 auto 6px}.podio .p:first-child .av,.podio .p:nth-child(2) .av{}
+.podio .p.l1 .av{box-shadow:0 0 0 4px var(--y),0 0 0 6px var(--k)}
+.logo-fallback{height:38px;width:38px;border-radius:10px;background:var(--k);color:var(--y);display:grid;place-items:center;font-weight:900;font-size:18px}
+header h1{font-size:17px;margin:0;flex:1;font-weight:900;letter-spacing:-.2px}
+header .who{font-size:12px;font-weight:700;opacity:.75}
+header button{background:var(--k);color:var(--y);border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
+nav{display:flex;gap:6px;padding:10px 12px;overflow-x:auto;background:var(--k);position:sticky;top:58px;z-index:19}
+nav button{border:0;background:#2a2a2a;color:#fff;border-radius:999px;padding:9px 15px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s}
+nav button.on{background:var(--y);color:var(--k);transform:scale(1.04)}
+nav .dot{display:inline-block;min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;line-height:18px;text-align:center;margin-left:6px;padding:0 5px}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:2px solid var(--k);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:3px 3px 0 var(--k);animation:up .35s both}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.sp{flex:1;min-width:0}
+.mut{color:var(--mut);font-size:13px}.big{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:800}
+.b-completo{background:#d9f2e3;color:var(--ok)}.b-incompleto{background:#ffe9bd;color:var(--warn)}.b-falta{background:#fbd9d9;color:var(--bad)}.b-pendente{background:#eceae0;color:var(--mut)}.b-folga{background:#dfe9fb;color:var(--blue)}
+button.btn{border:2px solid var(--k);background:#fff;border-radius:10px;padding:8px 13px;font-weight:800;cursor:pointer;transition:.1s}
+button.btn:active{transform:translate(2px,2px)}
+button.btn.pri{background:var(--k);color:var(--y)}button.btn.red{border-color:var(--bad);color:var(--bad)}button.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+button.btn:disabled{opacity:.5}
+input,select,textarea{font:inherit;padding:10px 12px;border:2px solid var(--k);border-radius:10px;background:#fff;max-width:100%}
+textarea{width:100%;min-height:80px}
+label{display:block;font-weight:800;font-size:13px;margin:10px 0 4px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}th{font-size:11px;color:var(--mut);text-transform:uppercase}
+.pos{width:36px;height:36px;border-radius:50%;background:var(--y);border:2px solid var(--k);display:grid;place-items:center;font-weight:900;flex:none}
+.bar{height:10px;background:#f1ecc9;border-radius:99px;overflow:hidden;margin-top:8px;border:1.5px solid var(--k)}
+.bar i{display:block;height:100%;background:var(--k);width:0;transition:width .9s cubic-bezier(.2,.9,.2,1)}
+.podio{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:6px 0 16px}
+.podio .p{flex:1;max-width:190px;text-align:center}
+.podio .nm{font-weight:900;font-size:14px;margin-bottom:4px;word-break:break-word}
+.podio .blk{background:var(--y);border:2px solid var(--k);border-bottom:0;border-radius:12px 12px 0 0;display:grid;place-items:start center;padding-top:8px;font-size:26px;transition:height .8s cubic-bezier(.2,.9,.2,1);height:0}
+.podio .nt{font-weight:900;font-size:20px}
+.det{display:none;margin-top:10px;padding-top:10px;border-top:2px dashed var(--line)}
+.card.open .det{display:block}.rk{cursor:pointer}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.chip{background:#f4efcf;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}
+.chip.bad{background:#fbd9d9;color:var(--bad)}
+.eu{background:var(--y2)}
+.alerta{background:#ffd9d9;border-color:var(--bad);box-shadow:3px 3px 0 var(--bad)}
+.foto{width:100%;max-height:340px;object-fit:cover;border-radius:12px;border:2px solid var(--k);margin-top:8px;cursor:zoom-in}
+.thumb{width:64px;height:64px;object-fit:cover;border-radius:10px;border:2px solid var(--k);cursor:zoom-in;flex:none}
+.hero{text-align:center;padding:22px 14px;background:var(--k);color:var(--y)}
+.hero .big{font-size:64px;line-height:1}
+.hero .mut{color:#d9c84a}
+.login{max-width:380px;margin:7vh auto;padding:0 16px;text-align:center}
+.login input{width:100%;margin-bottom:10px}
+.err{color:var(--bad);font-size:14px;min-height:20px;font-weight:700}
+.modos{display:grid;gap:12px;margin-top:20px}
+.modos button{padding:18px;font-size:17px;border-radius:16px;border:2px solid var(--k);background:#fff;font-weight:900;cursor:pointer;box-shadow:3px 3px 0 var(--k);text-align:left}
+.modos button small{display:block;font-weight:600;color:var(--mut);margin-top:3px}
+.modos button.y{background:var(--y)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(80px);background:var(--k);color:var(--y);padding:12px 18px;border-radius:12px;font-weight:800;z-index:99;transition:.3s;max-width:90vw}
+.toast.on{transform:translateX(-50%)}
+.zoom{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;display:grid;place-items:center;padding:12px}.zoom img{max-width:100%;max-height:100%;border-radius:12px}
+.flex2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:640px){th.h,td.h{display:none}.flex2{grid-template-columns:1fr}.hero .big{font-size:54px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SB_URL='https://qzaemusojkrbnwiegspl.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6YWVtdXNvamtyYm53aWVnc3BsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDQzNTcsImV4cCI6MjEwNjI4MDM1N30.mldqvhVnu-bD4ztO1jPEmM6fN_2VDIV27KmHC7X5lGk';
+const RH_URL='https://nypmeuzhsctkqloioyye.supabase.co';
+const RH_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55cG1ldXpoc2N0a3Fsb2lveXllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNzk3MjQsImV4cCI6MjEwNzY1NTcyNH0.8aeLa4WAWDiQR-BG9Ic4IgQx6zHsstE9Oe1qoSntOl8';
+const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{storageKey:'prem-staff'}});
+const rh=supabase.createClient(RH_URL,RH_KEY,{auth:{storageKey:'prem-colab'}});
+const $app=document.getElementById('app');
+const S={modo:null,papel:null,uid:null,email:'',tab:'ranking',mes:null,colabs:[],tipos:[],cfg:null,sel:null,novos:0,fotos:{}};
+function avatar(url,nome,cls=''){const ini=esc((nome||'?').trim().split(/\s+/).slice(0,2).map(p=>p[0]).join('').toUpperCase());return url?`<img class="av ${cls}" src="${esc(url)}" alt="${esc(nome)}">`:`<div class="av ${cls}">${ini}</div>`}
+async function loadFotos(){const m=S.colabs.filter(c=>c.foto_path);S.fotos={};if(!m.length)return;const {data}=await sb.storage.from('pt-fotos').createSignedUrls(m.map(c=>c.foto_path),3600);(data||[]).forEach(s=>{const c=m.find(x=>x.foto_path===s.path);if(c&&s.signedUrl)S.fotos[c.id]=s.signedUrl})}
+try{S.modo=localStorage.getItem('prem-modo')}catch(e){}
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hm=t=>t?String(t).slice(11,16):'—';
+const dm=d=>{const [,m,dd]=d.split('-');return dd+'/'+m};
+const dow=d=>['dom','seg','ter','qua','qui','sex','sáb'][new Date(d+'T12:00:00').getDay()];
+function brNow(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());const g=k=>p.find(x=>x.type===k).value;return new Date(Date.UTC(+g('year'),+g('month')-1,+g('day'),+g('hour')%24,+g('minute')))}
+const hojeCivil=()=>brNow().toISOString().slice(0,10);
+const hojeOperacional=()=>new Date(brNow().getTime()-5*3600*1000).toISOString().slice(0,10);
+const mesAtual=()=>hojeOperacional().slice(0,7)+'-01';
+function addMes(m,n){const d=new Date(m+'T12:00:00');d.setMonth(d.getMonth()+n);d.setDate(1);return d.toISOString().slice(0,10)}
+const nomeMes=m=>new Date(m+'T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+const f1=n=>Number(n).toFixed(1).replace('.',',');
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),2600)}
+async function rpc(fn,args){const {data,error}=await sb.rpc(fn,args);if(error){toast('Erro: '+error.message);throw error}return data}
+function logoHtml(){return `<img class="logo" src="logo.png" alt="99Burgers" onerror="this.outerHTML='<div class=&quot;logo-fallback&quot;>99</div>'">`}
+function zoomFoto(src){const z=document.createElement('div');z.className='zoom';z.innerHTML=`<img src="${esc(src)}" alt="Foto do erro">`;z.onclick=()=>z.remove();document.body.appendChild(z)}
+function countUp(el,to,dec=1,ms=900){const t0=performance.now();const st=n=>dec?f1(n):Math.round(n);(function f(t){const k=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-k,3);el.textContent=st(to*e);if(k<1)requestAnimationFrame(f)})(t0)}
+function animar(root=document){requestAnimationFrame(()=>{root.querySelectorAll('[data-count]').forEach(el=>countUp(el,parseFloat(el.dataset.count),el.dataset.dec==='0'?0:1));root.querySelectorAll('.bar i[data-w]').forEach(i=>i.style.width=i.dataset.w+'%');root.querySelectorAll('.blk[data-h]').forEach(b=>b.style.height=b.dataset.h+'px')})}
+function podioHtml(top,key){ // top: [{nome,nota,eu}]
+  if(!top.length)return '';
+  const ord=[top[1],top[0],top[2]].map((x,i)=>x&&{...x,lug:[2,1,3][i]});
+  const alt={1:120,2:88,3:66},med={1:'🥇',2:'🥈',3:'🥉'};
+  return `<div class="podio">${ord.map(x=>x?`<div class="p l${x.lug}">${avatar(x.foto,x.nome,'md')}<div class="nm">${esc(x.nome)}${x.eu?' (você)':''}</div><div class="nt" data-count="${x.nota}">0</div><div class="blk" data-h="${alt[x.lug]}">${med[x.lug]}</div></div>`:'<div class="p"></div>').join('')}</div>`;
+}
+
+/* ---------- entrada ---------- */
+function telaModo(){
+  $app.innerHTML=`<div class="login">${logoHtml().replace('class="logo"','class="logo" style="height:70px;margin:0 auto"')}<h1 style="margin:14px 0 2px">Premiação 99Burgers</h1><p class="mut">Quem faz o time brilhar ganha ponto.</p>
+  <div class="modos"><button class="y" id="m1">🏆 Sou colaborador<small>Entre com o mesmo login do app de RH</small></button><button id="m2">🛠️ Sou gerente / dono<small>Registrar erros e ver a pontuação</small></button></div></div>`;
+  m1.onclick=()=>{S.modo='colab';save();init()};m2.onclick=()=>{S.modo='staff';save();init()};
+}
+function save(){try{localStorage.setItem('prem-modo',S.modo||'')}catch(e){}}
+function telaLogin(msg){
+  const colab=S.modo==='colab';
+  $app.innerHTML=`<div class="login">${logoHtml().replace('class="logo"','class="logo" style="height:60px;margin:0 auto"')}<h1 style="margin:12px 0 2px">${colab?'Minha Premiação':'Painel da Premiação'}</h1>
+  <p class="mut">${colab?'Use o e-mail e a senha do app de RH.':'Use o login do painel.'}</p>
+  <input id="em" type="email" placeholder="E-mail" autocomplete="username"><input id="pw" type="password" placeholder="Senha" autocomplete="current-password">
+  <div class="err" id="er">${esc(msg||'')}</div><button class="btn pri" id="go" style="width:100%;padding:13px;font-size:16px">Entrar</button>
+  <p><a href="#" id="troca" class="mut">← trocar de perfil</a></p></div>`;
+  const go=async()=>{go_.disabled=true;const cl=colab?rh:sb;const {error}=await cl.auth.signInWithPassword({email:em.value.trim(),password:pw.value});go_.disabled=false;if(error){er.textContent='E-mail ou senha incorretos.';return}init()};
+  const go_=document.getElementById('go');go_.onclick=go;pw.onkeydown=e=>{if(e.key==='Enter')go()};
+  document.getElementById('troca').onclick=e=>{e.preventDefault();S.modo=null;save();init()};
+}
+async function sair(){await Promise.all([sb.auth.signOut(),rh.auth.signOut()]);S.modo=null;save();init()}
+
+async function init(){
+  S.mes=S.mes||mesAtual();
+  if(!S.modo){telaModo();return}
+  if(S.modo==='colab'){
+    const {data:{session}}=await rh.auth.getSession();
+    if(!session){telaLogin();return}
+    S.tab='meu';return renderColab();
+  }
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){telaLogin();return}
+  const {data:ac}=await sb.from('pt_acesso').select('papel').limit(1);
+  if(!ac||!ac.length){await sb.auth.signOut();telaLogin('Este login não tem acesso de gerente. Se você é colaborador, volte e escolha "Sou colaborador".');return}
+  S.papel=ac[0].papel;S.uid=session.user.id;S.email=session.user.email||'';
+  if(!['ranking','erros','pendentes','dias','colabs','tipos','sync'].includes(S.tab))S.tab='ranking';
+  const [c,cf,t]=await Promise.all([sb.from('pt_colaboradores').select('*').order('nome'),sb.from('pt_config').select('*').eq('id',1).single(),sb.from('pt_tipos_erro').select('*').order('nome')]);
+  S.colabs=c.data||[];S.cfg=cf.data;S.tipos=t.data||[];
+  await loadFotos();
+  render();
+}
+
+/* ---------- visão do gerente / dono ---------- */
+function shell(inner){
+  const adm=S.papel==='admin';
+  const tabs=[['ranking','🏆 Ranking'],['erros','📸 Erros'],['pendentes','⏳ Pendentes'],['dias','📅 Dias']].concat(adm?[['colabs','👥 Equipe'],['tipos','⚙️ Tipos de erro']]:[]).concat([['sync','🔌 Sistema']]);
+  $app.innerHTML=`<header>${logoHtml()}<h1>Premiação 99Burgers</h1><span class="who">${adm?'dono':'gerente'}</span><button id="out">Sair</button></header>
+  <nav>${tabs.map(([k,l])=>`<button data-t="${k}" class="${S.tab===k?'on':''}">${l}</button>`).join('')}</nav><main>${inner}</main>`;
+  document.getElementById('out').onclick=sair;
+  document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render()});
+}
+const mesBar=()=>`<div class="row" style="margin-bottom:12px;justify-content:center"><button class="btn" id="mp">◀</button><b style="text-transform:capitalize;min-width:150px;text-align:center;font-size:17px">${nomeMes(S.mes)}</b><button class="btn" id="mn">▶</button></div>`;
+function mesBind(){document.getElementById('mp').onclick=()=>{S.mes=addMes(S.mes,-1);render()};document.getElementById('mn').onclick=()=>{S.mes=addMes(S.mes,1);render()}}
+async function render(){
+  shell('<p class="mut">Carregando…</p>');
+  const f={ranking:vRanking,erros:vErros,pendentes:vPendentes,dias:vDias,colabs:vColabs,tipos:vTipos,sync:vSync}[S.tab];
+  const r=await f();const m=document.querySelector('main');m.innerHTML=r.html;r.bind&&r.bind();animar(m);
+}
+
+async function vRanking(){
+  const rows=await rpc('pt_resumo_mes',{p_mes:S.mes});
+  const pend=rows.reduce((a,r)=>a+r.pendentes,0),semEntrada=rows.filter(r=>!r.entrada_padrao).length;
+  let h=mesBar();
+  if(semEntrada)h+=`<div class="card" style="background:#fff0d1">⚠️ ${semEntrada} colaborador(es) sem horário de entrada — não pontuam pelo relógio até você cadastrar em <b>Equipe</b>.</div>`;
+  if(pend)h+=`<div class="card" style="background:#fff0d1">⏳ ${pend} dia(s) pendente(s). Marque folga ou falta em <b>Pendentes</b>.</div>`;
+  const com=rows.filter(r=>r.nota!==null),sem=rows.filter(r=>r.nota===null);
+  h+=podioHtml(com.slice(0,3).map(r=>({nome:r.nome.split(' ')[0],nota:r.nota,foto:S.fotos[r.colaborador_id]})));
+  h+=com.map((r,i)=>`<div class="card rk" onclick="this.classList.toggle('open')"><div class="row"><div class="pos">${i+1}</div>${avatar(S.fotos[r.colaborador_id],r.nome)}<div class="sp"><b>${esc(r.nome)}</b><div class="mut">${esc(r.cargo||'sem cargo')} · toque para detalhes</div></div><div class="big" data-count="${r.nota}">0</div></div>
+  <div class="bar"><i data-w="${r.nota*10}"></i></div>
+  <div class="det"><div class="chips"><span class="chip">${r.dias_contados} dias</span><span class="chip ${r.atrasos?'bad':''}">${r.atrasos} atraso(s)</span><span class="chip ${r.faltas?'bad':''}">${r.faltas} falta(s)</span><span class="chip ${r.intervalos_errados?'bad':''}">${r.intervalos_errados} intervalo(s) errado(s)</span>${r.incompletos?`<span class="chip bad">${r.incompletos} sem saída</span>`:''}<span class="chip ${r.erros?'bad':''}">${r.erros} erro(s) · −${r.pts_erros} pts</span></div><p class="mut">Pontos do relógio: ${r.pts}/${r.pts_max} · descontados por erros: ${r.pts_erros}</p></div></div>`).join('');
+  if(!com.length)h+='<div class="card mut">Ainda sem dias pontuados neste mês.</div>';
+  if(sem.length)h+=`<p class="mut">Sem nota ainda: ${sem.map(r=>esc(r.nome)).join(', ')}</p>`;
+  return {html:h,bind:mesBind};
+}
+
+/* ----- erros (com foto) ----- */
+function comprimir(file,max=1280,q=.78){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(new Error('foto')),'image/jpeg',q)};im.onerror=()=>rej(new Error('Não consegui ler a foto'));im.src=u})}
+async function vErros(){
+  const ativos=S.colabs.filter(c=>c.ativo),tp=S.tipos.filter(t=>t.ativo);
+  const ini=S.mes,fim=addMes(S.mes,1);
+  const {data}=await sb.from('pt_ocorrencias').select('*').gte('data',ini).lt('data',fim).order('criado_em',{ascending:false}).limit(100);
+  const lista=data||[];
+  const paths=lista.filter(o=>o.foto_path).map(o=>o.foto_path);let urls={};
+  if(paths.length){const {data:su}=await sb.storage.from('pt-fotos').createSignedUrls(paths,3600);(su||[]).forEach(s=>{if(s.signedUrl)urls[s.path]=s.signedUrl})}
+  const nome=Object.fromEntries(S.colabs.map(c=>[c.id,c.nome]));
+  let h=`<div class="card"><b style="font-size:17px">Registrar erro</b>
+  ${tp.length?'':'<p class="mut">Cadastre primeiro os tipos de erro (aba “Tipos de erro”, só o dono).</p>'}
+  <label>Colaborador</label><select id="o-col" style="width:100%">${ativos.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('')}</select>
+  <div class="flex2"><div><label>Tipo de erro</label><select id="o-tipo" style="width:100%">${tp.map(t=>`<option value="${t.id}" data-p="${t.pontos}">${esc(t.nome)} (−${t.pontos})</option>`).join('')}</select></div>
+  <div><label>Pontos perdidos</label><input id="o-pts" type="number" min="0" max="10" style="width:100%" value="${tp[0]?.pontos??1}"></div></div>
+  <label>Data do erro</label><input id="o-data" type="date" value="${hojeCivil()}">
+  <label>O que aconteceu</label><textarea id="o-desc" placeholder="Descreva o erro de forma clara e respeitosa…"></textarea>
+  <label>Foto (tire na hora)</label><input id="o-foto" type="file" accept="image/*" capture="environment" style="width:100%">
+  <div class="row" style="margin-top:14px"><button class="btn pri" id="o-ok" style="padding:12px 20px;font-size:16px" ${tp.length?'':'disabled'}>Registrar erro</button></div></div>`;
+  h+=`<h3 style="margin:18px 0 8px">Erros de ${nomeMes(S.mes)}</h3>`;
+  h+=lista.length?lista.map(o=>`<div class="card"><div class="row" style="align-items:flex-start">${o.foto_path&&urls[o.foto_path]?`<img class="thumb" src="${esc(urls[o.foto_path])}" data-z="${esc(urls[o.foto_path])}" alt="foto">`:''}<div class="sp"><b>${esc(nome[o.colaborador_id]||'?')}</b> <span class="badge b-falta">−${o.pontos}</span><div>${esc(o.tipo_nome)}</div><div class="mut">${esc(o.descricao||'')}</div><div class="mut">${dm(o.data)} · por ${esc(o.registrado_nome||'?')} · ${o.ciente_em?'✔ ciente':'⏳ ainda não viu'}</div></div>${S.papel==='admin'?`<button class="btn red" data-del="${o.id}">Excluir</button>`:''}</div></div>`).join(''):'<div class="card mut">Nenhum erro registrado neste mês. 👏</div>';
+  return {html:mesBar()+h,bind(){mesBind();
+    const tipo=document.getElementById('o-tipo');if(tipo)tipo.onchange=()=>{document.getElementById('o-pts').value=tipo.selectedOptions[0].dataset.p};
+    document.querySelectorAll('[data-z]').forEach(i=>i.onclick=()=>zoomFoto(i.dataset.z));
+    document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Excluir este erro? Os pontos voltam para a pessoa.'))return;const {error}=await sb.from('pt_ocorrencias').delete().eq('id',b.dataset.del);if(error)return toast(error.message);toast('Erro excluído');render()});
+    document.getElementById('o-ok').onclick=async ev=>{
+      const btn=ev.target,col=document.getElementById('o-col').value,tipoSel=document.getElementById('o-tipo').selectedOptions[0];
+      const pts=parseInt(document.getElementById('o-pts').value,10),desc=document.getElementById('o-desc').value.trim(),data=document.getElementById('o-data').value,file=document.getElementById('o-foto').files[0];
+      if(!col||!tipoSel)return toast('Escolha colaborador e tipo');if(!(pts>=0))return toast('Informe os pontos');if(!desc)return toast('Descreva o erro');if(!file)return toast('Tire uma foto do erro');
+      btn.disabled=true;btn.textContent='Enviando…';
+      try{
+        const blob=await comprimir(file);const path=`${col}/${crypto.randomUUID()}.jpg`;
+        const up=await sb.storage.from('pt-fotos').upload(path,blob,{contentType:'image/jpeg'});if(up.error)throw up.error;
+        const {error}=await sb.from('pt_ocorrencias').insert({colaborador_id:col,data,tipo_id:tipoSel.value,tipo_nome:tipoSel.textContent.replace(/\s*\(−\d+\)$/,''),descricao:desc,pontos:pts,foto_path:path,registrado_por:S.uid,registrado_nome:(S.email||'').split('@')[0]});
+        if(error){await sb.storage.from('pt-fotos').remove([path]);throw error}
+        toast('Erro registrado ✔ — o colaborador será avisado');render();
+      }catch(e){toast('Falhou: '+(e.message||e));btn.disabled=false;btn.textContent='Registrar erro'}
+    }}};
+}
+
+async function vPendentes(){
+  const {data}=await sb.from('pt_dias').select('colaborador_id,data,status').eq('status','pendente').order('data',{ascending:false});
+  const nome=Object.fromEntries(S.colabs.map(c=>[c.id,c.nome]));const por={};(data||[]).forEach(r=>(por[r.data]??=[]).push(r));
+  const dias=Object.keys(por).sort().reverse();
+  let h=`<p class="mut">Dias em que a pessoa deveria ter batido ponto e não bateu. Escolha o que foi.</p>`;
+  if(!dias.length)h+='<div class="card">✅ Nenhum dia pendente.</div>';
+  h+=dias.map(d=>`<div class="card"><b>${dow(d)} ${dm(d)}</b><table>${por[d].map(r=>`<tr><td>${esc(nome[r.colaborador_id]||'?')}</td><td style="text-align:right;white-space:nowrap"><button class="btn" data-m="folga" data-c="${r.colaborador_id}" data-d="${d}">Folga</button> <button class="btn red" data-m="falta" data-c="${r.colaborador_id}" data-d="${d}">Falta</button></td></tr>`).join('')}</table></div>`).join('');
+  return {html:h,bind(){document.querySelectorAll('[data-m]').forEach(b=>b.onclick=async()=>{b.disabled=true;await rpc('pt_marcar',{p_colab:b.dataset.c,p_data:b.dataset.d,p_tipo:b.dataset.m});toast('Marcado: '+b.dataset.m);render()})}};
+}
+
+async function vDias(){
+  const ativos=S.colabs.filter(c=>c.ativo);if(!S.sel||!ativos.find(c=>c.id===S.sel))S.sel=ativos[0]?.id;
+  const ini=S.mes,fim=addMes(S.mes,1);
+  const [d,e]=await Promise.all([sb.from('pt_dias').select('*').eq('colaborador_id',S.sel).gte('data',ini).lt('data',fim).order('data'),sb.from('pt_escala').select('*').eq('colaborador_id',S.sel).gte('data',ini).lt('data',fim)]);
+  const linhas={};(d.data||[]).forEach(r=>linhas[r.data]={...r});
+  (e.data||[]).forEach(r=>{if(r.folga&&!linhas[r.data])linhas[r.data]={data:r.data,status:'folga'};if(linhas[r.data])linhas[r.data].esc=r});
+  const datas=Object.keys(linhas).sort();
+  let h=mesBar()+`<div class="row" style="margin-bottom:12px"><select id="sel" style="width:100%">${ativos.map(c=>`<option value="${c.id}" ${c.id===S.sel?'selected':''}>${esc(c.nome)}</option>`).join('')}</select></div>`;
+  h+=`<div class="card" style="overflow-x:auto"><table><tr><th>Dia</th><th>Status</th><th>Batidas</th><th class="h">Entrada prev.</th><th class="h">Atraso</th><th class="h">Intervalo</th><th>Pts</th><th></th></tr>`;
+  h+=datas.map(k=>{const r=linhas[k],st=r.status;const bat=st==='folga'?'':[r.b1,r.b2,r.b3,r.b4].map(hm).join(' · ');
+    const ov=r.esc&&r.esc.entrada?' <span class="mut" title="horário alterado neste dia">*</span>':'';
+    const acts=st==='folga'||st==='falta'?`<button class="btn" data-lim="${k}">Desfazer</button>`:`<button class="btn" data-hor="${k}">Horário</button>`;
+    return `<tr><td>${dow(k)} ${dm(k)}</td><td><span class="badge b-${st}">${st}</span>${r.obs?`<div class="mut">${esc(r.obs)}</div>`:''}</td><td>${bat}</td><td class="h">${hm(r.entrada_prevista)}${ov}</td><td class="h">${r.minutos_atraso??'—'}</td><td class="h">${r.minutos_intervalo!=null?r.minutos_intervalo+' min':'—'}</td><td>${st==='folga'||st==='pendente'?'—':r.pts_total+'/'+r.pts_max}</td><td style="white-space:nowrap">${acts}</td></tr>`}).join('');
+  h+='</table>'+(datas.length?'':'<p class="mut">Sem dias neste mês.</p>')+'</div>';
+  return {html:h,bind(){mesBind();
+    document.getElementById('sel').onchange=ev=>{S.sel=ev.target.value;render()};
+    document.querySelectorAll('[data-lim]').forEach(b=>b.onclick=async()=>{await rpc('pt_marcar',{p_colab:S.sel,p_data:b.dataset.lim,p_tipo:'limpar'});render()});
+    document.querySelectorAll('[data-hor]').forEach(b=>b.onclick=async()=>{const v=prompt('Horário de entrada SÓ neste dia (HH:MM). Deixe vazio para voltar ao horário padrão:');if(v===null)return;const t=v.trim();
+      if(t&&!/^([01]?\d|2[0-3]):[0-5]\d$/.test(t)){toast('Use o formato HH:MM, ex.: 10:30');return}
+      await rpc('pt_entrada_dia',{p_colab:S.sel,p_data:b.dataset.hor,p_entrada:t||null});render()})}};
+}
+
+async function vColabs(){
+  const cargos=[...new Set(S.colabs.map(c=>c.cargo).filter(Boolean))];
+  let h=`<p class="mut">Cargo e horário de entrada de cada colaborador (a entrada vale todos os dias). Ao salvar, os dias passados são recalculados. Madrugada (ex.: 00:30) conta como o mesmo dia de trabalho.</p>
+  <datalist id="cargos">${cargos.concat(['Chapeiro','Auxiliar de cozinha','Atendente','Caixa','Entregador','Gerente','Líder de cozinha'].filter(x=>!cargos.includes(x))).map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+  <div class="card" style="overflow-x:auto"><table><tr><th>Foto</th><th>Nome</th><th>Cargo</th><th>Entrada</th><th>Ativo</th></tr>`;
+  h+=S.colabs.map(c=>`<tr><td style="white-space:nowrap"><label style="margin:0;cursor:pointer;display:inline-block" title="Trocar foto">${avatar(S.fotos[c.id],c.nome)}<input type="file" accept="image/*" data-foto="${c.id}" style="display:none"></label></td><td>${esc(c.nome)}</td><td><input list="cargos" data-g="${c.id}" value="${esc(c.cargo||'')}" placeholder="cargo" style="width:150px"></td><td><input type="time" data-e="${c.id}" value="${c.entrada_padrao?String(c.entrada_padrao).slice(0,5):''}"></td><td><input type="checkbox" data-a="${c.id}" ${c.ativo?'checked':''}></td></tr>`).join('');
+  h+=`</table></div><button class="btn pri" id="salvar" style="padding:12px 22px;font-size:16px">Salvar tudo</button>`;
+  return {html:h,bind(){
+    document.querySelectorAll('[data-foto]').forEach(inp=>inp.onchange=async()=>{
+      const f=inp.files[0];if(!f)return;const c=S.colabs.find(x=>x.id===inp.dataset.foto);toast('Enviando foto…');
+      try{
+        const blob=await comprimir(f,480,.82),path=`avatar/${c.id}-${Date.now()}.jpg`;
+        const up=await sb.storage.from('pt-fotos').upload(path,blob,{contentType:'image/jpeg'});if(up.error)throw up.error;
+        const {error}=await sb.from('pt_colaboradores').update({foto_path:path}).eq('id',c.id);if(error){await sb.storage.from('pt-fotos').remove([path]);throw error}
+        if(c.foto_path)await sb.storage.from('pt-fotos').remove([c.foto_path]);
+        const r=await sb.from('pt_colaboradores').select('*').order('nome');S.colabs=r.data||[];await loadFotos();toast('Foto salva ✔');render();
+      }catch(e){toast('Falhou: '+(e.message||e))}
+    });
+    document.getElementById('salvar').onclick=async ev=>{
+    ev.target.disabled=true;let n=0,hor=false;
+    for(const c of S.colabs){
+      const e=document.querySelector(`[data-e="${c.id}"]`).value||null,a=document.querySelector(`[data-a="${c.id}"]`).checked,g=document.querySelector(`[data-g="${c.id}"]`).value.trim()||null;
+      const atual=c.entrada_padrao?String(c.entrada_padrao).slice(0,5):null;
+      if(e!==atual||a!==c.ativo||g!==(c.cargo||null)){const {error}=await sb.from('pt_colaboradores').update({entrada_padrao:e,ativo:a,cargo:g}).eq('id',c.id);if(error){toast(error.message);ev.target.disabled=false;return}n++;if(e!==atual)hor=true}
+    }
+    const ontem=new Date(new Date(hojeOperacional()+'T12:00:00').getTime()-864e5).toISOString().slice(0,10),ini=S.cfg.inicio_pontuacao;
+    if(hor&&ontem>=ini)await rpc('pt_recalcular',{p_ini:ini,p_fim:ontem});
+    const c=await sb.from('pt_colaboradores').select('*').order('nome');S.colabs=c.data||[];
+    toast(n?`${n} alteração(ões) salva(s) ✔`:'Nada mudou');ev.target.disabled=false;render()}}};
+}
+
+async function vTipos(){
+  let h=`<p class="mut">Os tipos de erro que o gerente pode escolher, com os pontos que cada um desconta. Ex.: “Hambúrguer fora do padrão” = 1 ponto.</p>
+  <div class="card"><div class="row"><input id="t-nome" placeholder="Nome do erro" style="flex:1;min-width:180px"><input id="t-pts" type="number" min="1" max="10" value="1" style="width:80px"><button class="btn pri" id="t-add">Adicionar</button></div></div>`;
+  h+=S.tipos.map(t=>`<div class="card"><div class="row"><div class="sp"><b>${esc(t.nome)}</b> <span class="badge b-falta">−${t.pontos}</span> ${t.ativo?'':'<span class="badge b-pendente">desativado</span>'}</div><button class="btn" data-ed="${t.id}">Editar</button> <button class="btn ${t.ativo?'red':''}" data-tg="${t.id}">${t.ativo?'Desativar':'Ativar'}</button></div></div>`).join('')||'<div class="card mut">Nenhum tipo ainda. Adicione o primeiro acima.</div>';
+  return {html:h,bind(){
+    const reload=async()=>{const {data}=await sb.from('pt_tipos_erro').select('*').order('nome');S.tipos=data||[];render()};
+    document.getElementById('t-add').onclick=async()=>{const nome=document.getElementById('t-nome').value.trim(),pontos=parseInt(document.getElementById('t-pts').value,10);if(!nome||!(pontos>0))return toast('Informe nome e pontos');const {error}=await sb.from('pt_tipos_erro').insert({nome,pontos});if(error)return toast(error.message);toast('Tipo adicionado ✔');reload()};
+    document.querySelectorAll('[data-tg]').forEach(b=>b.onclick=async()=>{const t=S.tipos.find(x=>x.id===b.dataset.tg);await sb.from('pt_tipos_erro').update({ativo:!t.ativo}).eq('id',t.id);reload()});
+    document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=async()=>{const t=S.tipos.find(x=>x.id===b.dataset.ed);const n=prompt('Nome do erro:',t.nome);if(n===null)return;const p=prompt('Pontos que desconta:',t.pontos);if(p===null)return;const pt=parseInt(p,10);if(!n.trim()||!(pt>0))return toast('Valores inválidos');await sb.from('pt_tipos_erro').update({nome:n.trim(),pontos:pt}).eq('id',t.id);reload()});
+  }};
+}
+
+async function vSync(){
+  const {data}=await sb.from('pt_sync').select('*').limit(1);const s=data?.[0],q=s?new Date(s.ultima_sync):null,min=q?Math.round((Date.now()-q.getTime())/60000):null,ok=min!==null&&min<=15;
+  return {html:`<div class="card"><div class="row"><b>Relógio de ponto</b><span class="badge ${ok?'b-completo':'b-falta'}">${ok?'sincronizando':'ATENÇÃO'}</span></div>
+  <p>Última sincronização: <b>${q?q.toLocaleString('pt-BR'):'nunca'}</b>${min!==null?` (há ${min} min)`:''}</p>
+  <p class="mut">${s?s.total_batidas.toLocaleString('pt-BR'):0} batidas no total. ${ok?'':'Se passar de 15 min, confira se o PC do restaurante está ligado e na rede do relógio.'}</p></div>
+  <div class="card"><b>Regras em uso</b><p class="mut">Atraso: mais de ${S.cfg.tolerancia_atraso_min} min após a entrada. Intervalo: ${S.cfg.intervalo_min} min ±${S.cfg.intervalo_tolerancia_min}. Pontos do relógio por dia: ${S.cfg.pts_presenca} presença + ${S.cfg.pts_pontualidade} pontualidade + ${S.cfg.pts_intervalo} intervalo. Cada erro registrado desconta pontos do mês. Dia de trabalho: das ${S.cfg.corte_hora}h às ${S.cfg.corte_hora}h. Pontuação desde ${S.cfg.inicio_pontuacao.split('-').reverse().join('/')}.</p></div>`};
+}
+
+/* ---------- visão do colaborador ---------- */
+async function renderColab(){
+  $app.innerHTML=`<header>${logoHtml()}<h1>Minha Premiação</h1><button id="out">Sair</button></header><main><p class="mut">Carregando…</p></main>`;
+  document.getElementById('out').onclick=sair;
+  const {data:{session}}=await rh.auth.getSession();
+  let r,j;try{r=await fetch(SB_URL+'/functions/v1/meu-painel',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token,apikey:SB_KEY},body:JSON.stringify({mes:S.mes})});j=await r.json()}catch(e){j={erro:'Sem conexão'}}
+  const m=document.querySelector('main');
+  if(!r||!r.ok){m.innerHTML=`<div class="card alerta"><b>Não consegui abrir sua Premiação.</b><p>${esc(j.erro||'erro')}</p><button class="btn" id="vt">Voltar</button></div>`;document.getElementById('vt').onclick=sair;return}
+  const novos=j.ocorrencias.filter(o=>!o.ciente_em);
+  let h='';
+  if(novos.length){h+=novos.map(o=>`<div class="card alerta"><b>⚠️ Novo erro registrado</b><div style="margin-top:4px"><b>${esc(o.tipo_nome)}</b> <span class="badge b-falta">−${o.pontos} pt</span></div><div>${esc(o.descricao||'')}</div><div class="mut">${dm(o.data)}</div>${o.foto?`<img class="foto" src="${esc(o.foto)}" data-z="${esc(o.foto)}" alt="foto do erro">`:''}<button class="btn ok" style="margin-top:12px;width:100%;padding:12px" data-ci="${o.id}">Estou ciente</button></div>`).join('')}
+  h+=`<div class="card hero">${avatar(j.eu.foto,j.eu.nome,'lg').replace('class="av lg"','class="av lg" style="margin:0 auto 8px;border-color:#E8A32C"')}<div class="mut">${esc(j.eu.nome.split(' ')[0])}${j.eu.cargo?' · '+esc(j.eu.cargo):''}</div><div class="mut" style="text-transform:capitalize">${nomeMes(j.mes)}</div>
+  ${j.meu&&j.meu.nota!==null?`<div class="big" data-count="${j.meu.nota}">0</div><div class="mut">de 10 pontos</div>`:'<div class="big">—</div><div class="mut">sua nota aparece quando houver dias pontuados</div>'}</div>`;
+  const rk=j.ranking;
+  h+=`<div class="row" style="justify-content:center;margin:6px 0"><button class="btn" id="mp">◀</button><b style="text-transform:capitalize;min-width:150px;text-align:center">${nomeMes(S.mes)}</b><button class="btn" id="mn">▶</button></div>`;
+  if(rk.length){const pos=rk.find(x=>x.eu);h+=pos?`<p style="text-align:center;font-weight:800">Você está em <span style="font-size:22px">${pos.pos}º</span> de ${rk.length} 🏆</p>`:'';
+    h+=podioHtml(rk.slice(0,3));
+    h+=rk.map(x=>`<div class="card ${x.eu?'eu':''}"><div class="row"><div class="pos">${x.pos}</div>${avatar(x.foto,x.nome)}<div class="sp"><b>${esc(x.nome)}${x.eu?' (você)':''}</b><div class="mut">${esc(x.cargo||'')}</div></div><div class="big" style="font-size:24px" data-count="${x.nota}">0</div></div><div class="bar"><i data-w="${x.nota*10}"></i></div></div>`).join('')}
+  else h+='<div class="card mut">O ranking deste mês aparece quando houver dias pontuados.</div>';
+  if(j.meu){h+=`<div class="card"><b>Como está sua nota</b><div class="chips"><span class="chip">${j.meu.pts}/${j.meu.pts_max} pts do ponto</span><span class="chip ${j.meu.atrasos?'bad':''}">${j.meu.atrasos} atraso(s)</span><span class="chip ${j.meu.faltas?'bad':''}">${j.meu.faltas} falta(s)</span><span class="chip ${j.meu.intervalos_errados?'bad':''}">${j.meu.intervalos_errados} intervalo(s) errado(s)</span><span class="chip ${j.meu.erros?'bad':''}">${j.meu.erros} erro(s) · −${j.meu.pts_erros}</span></div></div>`}
+  const ja=j.ocorrencias.filter(o=>o.ciente_em);
+  if(ja.length)h+=`<h3>Meus erros do mês</h3>`+ja.map(o=>`<div class="card"><div class="row" style="align-items:flex-start">${o.foto?`<img class="thumb" src="${esc(o.foto)}" data-z="${esc(o.foto)}" alt="foto">`:''}<div class="sp"><b>${esc(o.tipo_nome)}</b> <span class="badge b-falta">−${o.pontos}</span><div class="mut">${esc(o.descricao||'')}</div><div class="mut">${dm(o.data)}</div></div></div></div>`).join('');
+  m.innerHTML=h;animar(m);
+  document.getElementById('mp').onclick=()=>{S.mes=addMes(S.mes,-1);renderColab()};document.getElementById('mn').onclick=()=>{S.mes=addMes(S.mes,1);renderColab()};
+  m.querySelectorAll('[data-z]').forEach(i=>i.onclick=()=>zoomFoto(i.dataset.z));
+  m.querySelectorAll('[data-ci]').forEach(b=>b.onclick=async()=>{b.disabled=true;await fetch(SB_URL+'/functions/v1/meu-painel',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token,apikey:SB_KEY},body:JSON.stringify({acao:'ciente',id:b.dataset.ci})});toast('Obrigado! Vamos melhorar juntos 💪');renderColab()});
+}
+
+sb.auth.onAuthStateChange(()=>{});
+init();
+</script>
+</body>
+</html>
