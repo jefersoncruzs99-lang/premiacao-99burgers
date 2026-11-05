@@ -148,7 +148,7 @@ async function init(){
   const {data:ac}=await sb.from('pt_acesso').select('papel').limit(1);
   if(!ac||!ac.length){await sb.auth.signOut();telaLogin('Este login não tem acesso de gerente. Se você é colaborador, volte e escolha "Sou colaborador".');return}
   S.papel=ac[0].papel;S.uid=session.user.id;S.email=session.user.email||'';
-  if(!['ranking','erros','pendentes','dias','colabs','tipos','sync'].includes(S.tab))S.tab='ranking';
+  if(!['ranking','erros','pendentes','dias','colabs','extras','tipos','sync'].includes(S.tab))S.tab='ranking';
   const [c,cf,t]=await Promise.all([sb.from('pt_colaboradores').select('*').order('nome'),sb.from('pt_config').select('*').eq('id',1).single(),sb.from('pt_tipos_erro').select('*').order('nome')]);
   S.colabs=c.data||[];S.cfg=cf.data;S.tipos=t.data||[];
   await loadFotos();
@@ -158,7 +158,7 @@ async function init(){
 /* ---------- visão do gerente / dono ---------- */
 function shell(inner){
   const adm=S.papel==='admin';
-  const tabs=[['ranking','🏆 Ranking'],['erros','📸 Erros'],['pendentes','⏳ Pendentes'],['dias','📅 Dias']].concat(adm?[['colabs','👥 Equipe'],['tipos','⚙️ Tipos de erro']]:[]).concat([['sync','🔌 Sistema']]);
+  const tabs=[['ranking','🏆 Ranking'],['erros','📸 Erros'],['pendentes','⏳ Pendentes'],['dias','📅 Dias']].concat(adm?[['colabs','👥 Equipe'],['extras','⏱️ Horas extras'],['tipos','⚙️ Tipos de erro']]:[]).concat([['sync','🔌 Sistema']]);
   $app.innerHTML=`<header>${logoHtml()}<h1>Premiação 99Burgers</h1><span class="who">${adm?'dono':'gerente'}</span><button id="out">Sair</button></header>
   <nav>${tabs.map(([k,l])=>`<button data-t="${k}" class="${S.tab===k?'on':''}">${l}</button>`).join('')}</nav><main>${inner}</main>`;
   document.getElementById('out').onclick=sair;
@@ -168,7 +168,7 @@ const mesBar=()=>`<div class="row" style="margin-bottom:12px;justify-content:cen
 function mesBind(){document.getElementById('mp').onclick=()=>{S.mes=addMes(S.mes,-1);render()};document.getElementById('mn').onclick=()=>{S.mes=addMes(S.mes,1);render()}}
 async function render(){
   shell('<p class="mut">Carregando…</p>');
-  const f={ranking:vRanking,erros:vErros,pendentes:vPendentes,dias:vDias,colabs:vColabs,tipos:vTipos,sync:vSync}[S.tab];
+  const f={ranking:vRanking,erros:vErros,pendentes:vPendentes,dias:vDias,colabs:vColabs,extras:vExtras,tipos:vTipos,sync:vSync}[S.tab];
   const r=await f();const m=document.querySelector('main');m.innerHTML=r.html;r.bind&&r.bind();animar(m);
 }
 
@@ -262,9 +262,9 @@ async function vDias(){
 
 async function vColabs(){
   const cargos=[...new Set(S.colabs.map(c=>c.cargo).filter(Boolean))];
-  let h=`<p class="mut">Cargo e horário de entrada de cada colaborador (a entrada vale todos os dias). Ao salvar, os dias passados são recalculados. Madrugada (ex.: 00:30) conta como o mesmo dia de trabalho.</p>
-  <div class="card" style="overflow-x:auto"><table><tr><th>Foto</th><th>Nome</th><th>Cargo</th><th>Entrada</th><th>Ativo</th></tr>`;
-  h+=S.colabs.map(c=>`<tr><td style="white-space:nowrap"><label style="margin:0;cursor:pointer;display:inline-block" title="Trocar foto">${avatar(S.fotos[c.id],c.nome)}<input type="file" accept="image/*" data-foto="${c.id}" style="display:none"></label></td><td>${esc(c.nome)}</td><td><select data-g="${c.id}"><option value="">— cargo —</option>${CARGOS.map(g=>`<option ${g===c.cargo?'selected':''}>${g}</option>`).join('')}${c.cargo&&!CARGOS.includes(c.cargo)?`<option selected>${esc(c.cargo)}</option>`:''}</select></td><td><input type="time" data-e="${c.id}" value="${c.entrada_padrao?String(c.entrada_padrao).slice(0,5):''}"></td><td><input type="checkbox" data-a="${c.id}" ${c.ativo?'checked':''}></td></tr>`).join('');
+  let h=`<p class="mut">Cargo, horário de entrada e saída prevista de cada colaborador (a saída prevista é usada para estimar dias em que faltou a batida de saída; vale para as Horas extras). Ao salvar, os dias passados são recalculados. Madrugada (ex.: 00:30) conta como o mesmo dia de trabalho.</p>
+  <div class="card" style="overflow-x:auto"><table><tr><th>Foto</th><th>Nome</th><th>Cargo</th><th>Entrada</th><th>Saída</th><th>Ativo</th></tr>`;
+  h+=S.colabs.map(c=>`<tr><td style="white-space:nowrap"><label style="margin:0;cursor:pointer;display:inline-block" title="Trocar foto">${avatar(S.fotos[c.id],c.nome)}<input type="file" accept="image/*" data-foto="${c.id}" style="display:none"></label></td><td>${esc(c.nome)}</td><td><select data-g="${c.id}"><option value="">— cargo —</option>${CARGOS.map(g=>`<option ${g===c.cargo?'selected':''}>${g}</option>`).join('')}${c.cargo&&!CARGOS.includes(c.cargo)?`<option selected>${esc(c.cargo)}</option>`:''}</select></td><td><input type="time" data-e="${c.id}" value="${c.entrada_padrao?String(c.entrada_padrao).slice(0,5):''}"></td><td><input type="time" data-s="${c.id}" value="${c.saida_padrao?String(c.saida_padrao).slice(0,5):''}"></td><td><input type="checkbox" data-a="${c.id}" ${c.ativo?'checked':''}></td></tr>`).join('');
   h+=`</table></div><button class="btn pri" id="salvar" style="padding:12px 22px;font-size:16px">Salvar tudo</button>`;
   return {html:h,bind(){
     document.querySelectorAll('[data-foto]').forEach(inp=>inp.onchange=async()=>{
@@ -281,13 +281,61 @@ async function vColabs(){
     ev.target.disabled=true;let n=0,hor=false;
     for(const c of S.colabs){
       const e=document.querySelector(`[data-e="${c.id}"]`).value||null,a=document.querySelector(`[data-a="${c.id}"]`).checked,g=document.querySelector(`[data-g="${c.id}"]`).value.trim()||null;
-      const atual=c.entrada_padrao?String(c.entrada_padrao).slice(0,5):null;
-      if(e!==atual||a!==c.ativo||g!==(c.cargo||null)){const {error}=await sb.from('pt_colaboradores').update({entrada_padrao:e,ativo:a,cargo:g}).eq('id',c.id);if(error){toast(error.message);ev.target.disabled=false;return}n++;if(e!==atual)hor=true}
+      const atual=c.entrada_padrao?String(c.entrada_padrao).slice(0,5):null,sd=document.querySelector(`[data-s="${c.id}"]`).value||null,sAt=c.saida_padrao?String(c.saida_padrao).slice(0,5):null;
+      if(e!==atual||sd!==sAt||a!==c.ativo||g!==(c.cargo||null)){const {error}=await sb.from('pt_colaboradores').update({entrada_padrao:e,saida_padrao:sd,ativo:a,cargo:g}).eq('id',c.id);if(error){toast(error.message);ev.target.disabled=false;return}n++;if(e!==atual)hor=true}
     }
     const ontem=new Date(new Date(hojeOperacional()+'T12:00:00').getTime()-864e5).toISOString().slice(0,10),ini=S.cfg.inicio_pontuacao;
     if(hor&&ontem>=ini)await rpc('pt_recalcular',{p_ini:ini,p_fim:ontem});
     const c=await sb.from('pt_colaboradores').select('*').order('nome');S.colabs=c.data||[];
     toast(n?`${n} alteração(ões) salva(s) ✔`:'Nada mudou');ev.target.disabled=false;render()}}};
+}
+
+/* ----- horas extras (só o dono) ----- */
+const fmtH=m=>{m=Math.round(m||0);const sg=m<0?'-':'';m=Math.abs(m);return sg+Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')};
+function parseH(t){t=String(t||'').trim().replace(',','.');let m=t.match(/^(\d{1,2}):(\d{2})$/);if(m)return +m[1]*60+ +m[2];m=t.match(/^(\d{1,2})h(\d{2})?$/i);if(m)return +m[1]*60+(+m[2]||0);if(/^\d+(\.\d+)?$/.test(t))return Math.round(parseFloat(t)*60);return null}
+function modalBaixa(nome,saldo,onOk){
+  const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px';
+  o.innerHTML=`<div class="card" style="max-width:380px;width:100%"><b>Registrar pagamento · ${esc(nome)}</b><p class="mut">Quanto foi baixado do saldo (horas:minutos)?</p>
+  <input id="bx-h" value="${fmtH(saldo).replace('h',':')}" style="width:100%"><select id="bx-t" style="width:100%;margin-top:8px"><option value="paga">Paga em dinheiro</option><option value="compensada">Compensada em folga</option></select>
+  <input id="bx-o" placeholder="Observação (ex.: pago no holerite de nov/26)" style="width:100%;margin-top:8px"><div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn" id="bx-c">Cancelar</button><button class="btn pri" id="bx-ok">Salvar</button></div></div>`;
+  document.body.appendChild(o);o.querySelector('#bx-c').onclick=()=>o.remove();
+  o.querySelector('#bx-ok').onclick=()=>{const m=parseH(o.querySelector('#bx-h').value);if(!(m>0))return toast('Informe as horas, ex.: 10:30');onOk(m,o.querySelector('#bx-t').value,o.querySelector('#bx-o').value.trim()||null);o.remove()};
+}
+async function vExtras(){
+  const ini='2025-12-29',fim=new Date(new Date(hojeOperacional()+'T12:00:00').getTime()-864e5).toISOString().slice(0,10);
+  const [sem,rev,bx]=await Promise.all([rpc('pt_extras_semanas',{p_ini:ini,p_fim:fim}),rpc('pt_extras_revisar',{p_ini:ini,p_fim:fim}),sb.from('pt_extras_baixa').select('*').order('criado_em',{ascending:false})]);
+  const baixas=bx.data||[],por={};
+  (sem||[]).forEach(r=>{const o=por[r.colaborador_id]||(por[r.colaborador_id]={id:r.colaborador_id,nome:r.nome,ext:0,sem:[],est:0,pen:0,bx:0});o.ext+=r.extra_min;o.est+=r.estimados;o.pen+=r.pendentes;if(r.extra_min>0)o.sem.push(r)});
+  baixas.forEach(b=>{const o=por[b.colaborador_id]||(por[b.colaborador_id]={id:b.colaborador_id,nome:(S.colabs.find(c=>c.id===b.colaborador_id)||{}).nome||'—',ext:0,sem:[],est:0,pen:0,bx:0});o.bx+=b.minutos});
+  const lista=Object.values(por).filter(o=>o.ext>0||o.bx>0).sort((a,b)=>(b.ext-b.bx)-(a.ext-a.bx));
+  const totalSaldo=lista.reduce((a,o)=>a+Math.max(0,o.ext-o.bx),0);
+  const comExtra=new Set(lista.filter(o=>o.ext>0).map(o=>o.id));
+  const filtro=S.exFiltro||'extras',est=S.exEstado||'todos';
+  const revF=(rev||[]).filter(r=>(filtro==='todos'||comExtra.has(r.colaborador_id))&&(est==='todos'||r.estado===est||(est==='feitos'&&['ajustado','abonado'].includes(r.estado))));
+  const nEst=(rev||[]).filter(r=>r.estado==='estimado'&&comExtra.has(r.colaborador_id)).length,nPen=(rev||[]).filter(r=>r.estado==='pendente'&&comExtra.has(r.colaborador_id)).length;
+  let h=`<p class="mut">Horas acima de <b>44h por semana</b> (segunda a domingo), contadas a partir das batidas do relógio desde 29/12/2025. Só para o seu controle: o contador deve conferir antes do pagamento. Dias com horário presumido contam pela regra explicada em cada dia abaixo.</p>
+  <div class="card hero"><div class="mut">Total de horas extras a pagar</div><div class="big" style="font-size:40px">${fmtH(totalSaldo)}</div><div class="chips" style="justify-content:center"><span class="chip">${lista.filter(o=>o.ext-o.bx>0).length} pessoa(s)</span><span class="chip ${nEst?'bad':''}">${nEst} dia(s) estimado(s)</span><span class="chip ${nPen?'bad':''}">${nPen} dia(s) pendente(s)</span></div></div>`;
+  h+=lista.map(o=>{const saldo=o.ext-o.bx;return `<div class="card"><div class="row">${avatar(S.fotos[o.id],o.nome)}<div class="sp"><b>${esc(o.nome)}</b><div class="mut">apuradas ${fmtH(o.ext)} · já baixadas ${fmtH(o.bx)}</div></div><div style="text-align:right"><div class="mut">a pagar</div><div class="big" style="font-size:24px">${fmtH(Math.max(0,saldo))}</div></div></div>
+  <div class="chips">${o.sem.length?`<span class="chip">${o.sem.length} semana(s) com extra</span>`:''}${o.est?`<span class="chip bad">${o.est} dia(s) estimado(s)</span>`:''}${o.pen?`<span class="chip bad">${o.pen} pendente(s)</span>`:''}</div>
+  <details style="margin-top:8px"><summary class="mut" style="cursor:pointer">Ver semanas e pagamentos</summary>
+  ${o.sem.sort((a,b)=>a.semana<b.semana?1:-1).map(w=>`<div class="row" style="padding:3px 0"><span class="sp">Semana de ${dm(w.semana)}</span><span class="mut">${fmtH(w.minutos)} trabalhadas</span><b>+${fmtH(w.extra_min)}</b>${w.estimados?'<span class="badge b-incompleto">estimada</span>':''}${w.pendentes?'<span class="badge b-falta">pendência</span>':''}</div>`).join('')||'<p class="mut">Sem semanas com extra.</p>'}
+  ${baixas.filter(b=>b.colaborador_id===o.id).map(b=>`<div class="row" style="padding:3px 0"><span class="sp">${b.tipo==='paga'?'💵 Paga':'🏖️ Compensada'} em ${new Date(b.criado_em).toLocaleDateString('pt-BR')}${b.obs?' · '+esc(b.obs):''}</span><b>−${fmtH(b.minutos)}</b><button class="btn red" data-delbx="${b.id}">Desfazer</button></div>`).join('')}</details>
+  <button class="btn pri" style="margin-top:10px;width:100%" data-baixa="${o.id}" ${saldo>0?'':'disabled'}>Registrar pagamento</button></div>`}).join('')||'<div class="card mut">Nenhuma hora extra apurada.</div>';
+  h+=`<h3 style="margin-top:22px">Dias para revisar</h3><p class="mut">Estimados já entram na conta. Se o horário real for diferente, informe as horas trabalhadas; para não contar o dia, use Abonar.</p>
+  <div class="row" style="margin-bottom:8px"><select id="ex-f"><option value="extras" ${filtro==='extras'?'selected':''}>Só quem tem hora extra</option><option value="todos" ${filtro==='todos'?'selected':''}>Todos os colaboradores</option></select><select id="ex-e"><option value="todos" ${est==='todos'?'selected':''}>Todos</option><option value="estimado" ${est==='estimado'?'selected':''}>Estimados</option><option value="pendente" ${est==='pendente'?'selected':''}>Pendentes</option><option value="feitos" ${est==='feitos'?'selected':''}>Já ajustados</option></select><span class="mut">${revF.length} dia(s)</span></div>`;
+  h+=revF.slice(0,150).map(r=>`<div class="card"><div class="row"><div class="sp"><b>${esc(r.nome)}</b> · ${dow(r.dia)} ${dm(r.dia)}<div class="mut">Batidas: ${esc(r.batidas)}</div>${r.motivo?`<div class="mut">${esc(r.motivo)}</div>`:''}</div>
+  <div style="text-align:right"><span class="badge ${r.estado==='pendente'?'b-falta':r.estado==='estimado'?'b-incompleto':'b-completo'}">${r.estado}</span><div><b>${r.minutos===null?'—':fmtH(r.minutos)}</b></div></div></div>
+  <div class="row" style="margin-top:8px;justify-content:flex-end">${['ajustado','abonado'].includes(r.estado)?`<button class="btn" data-un="${r.colaborador_id}|${r.dia}">Desfazer ajuste</button>`:`<button class="btn" data-hm="${r.colaborador_id}|${r.dia}">Informar horas</button><button class="btn red" data-ab="${r.colaborador_id}|${r.dia}">Abonar</button>`}</div></div>`).join('')||'<div class="card mut">Nenhum dia nesta lista.</div>';
+  if(revF.length>150)h+=`<p class="mut">Mostrando 150 de ${revF.length}. Use os filtros para refinar.</p>`;
+  return {html:h,bind(){
+    const ok=r=>{if(r.error){toast(r.error.message);return false}return true};
+    document.getElementById('ex-f').onchange=e=>{S.exFiltro=e.target.value;render()};document.getElementById('ex-e').onchange=e=>{S.exEstado=e.target.value;render()};
+    document.querySelectorAll('[data-baixa]').forEach(b=>b.onclick=()=>{const o=por[b.dataset.baixa];modalBaixa(o.nome,o.ext-o.bx,async(m,t,obs)=>{if(ok(await sb.from('pt_extras_baixa').insert({colaborador_id:o.id,minutos:m,tipo:t,obs}))){toast('Baixa registrada ✔');render()}})});
+    document.querySelectorAll('[data-delbx]').forEach(b=>b.onclick=async()=>{if(!confirm('Desfazer esta baixa?'))return;if(ok(await sb.from('pt_extras_baixa').delete().eq('id',b.dataset.delbx)))render()});
+    document.querySelectorAll('[data-ab]').forEach(b=>b.onclick=async()=>{const [c,d]=b.dataset.ab.split('|');if(ok(await sb.from('pt_extras_ajuste').upsert({colaborador_id:c,dia:d,tipo:'abonar',minutos:null},{onConflict:'colaborador_id,dia'}))){toast('Dia abonado ✔');render()}});
+    document.querySelectorAll('[data-hm]').forEach(b=>b.onclick=async()=>{const [c,d]=b.dataset.hm.split('|');const t=prompt('Quanto tempo trabalhou nesse dia (já sem o descanso)? Ex.: 8:00','8:00');if(t===null)return;const m=parseH(t);if(m===null||m>16*60)return toast('Horas inválidas');if(ok(await sb.from('pt_extras_ajuste').upsert({colaborador_id:c,dia:d,tipo:'minutos',minutos:m},{onConflict:'colaborador_id,dia'}))){toast('Ajustado ✔');render()}});
+    document.querySelectorAll('[data-un]').forEach(b=>b.onclick=async()=>{const [c,d]=b.dataset.un.split('|');if(ok(await sb.from('pt_extras_ajuste').delete().eq('colaborador_id',c).eq('dia',d)))render()});
+  }};
 }
 
 async function vTipos(){
