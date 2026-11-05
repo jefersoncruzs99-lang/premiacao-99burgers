@@ -301,9 +301,26 @@ function modalBaixa(nome,saldo,onOk){
   document.body.appendChild(o);o.querySelector('#bx-c').onclick=()=>o.remove();
   o.querySelector('#bx-ok').onclick=()=>{const m=parseH(o.querySelector('#bx-h').value);if(!(m>0))return toast('Informe as horas, ex.: 10:30');onOk(m,o.querySelector('#bx-t').value,o.querySelector('#bx-o').value.trim()||null);o.remove()};
 }
+function modalHorarios(titulo,atuais,onOk){
+  const lab=['1ª entrada','1ª saída (ida p/ descanso ou fim)','2ª entrada (volta do descanso)','2ª saída','3ª entrada','3ª saída'];
+  const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;overflow:auto';
+  o.innerHTML=`<div class="card" style="max-width:420px;width:100%"><b>${esc(titulo)}</b><p class="mut">Preencha os horários reais, em ordem. Deixe em branco o que não existiu (ex.: sábado só tem entrada e saída). O descanso é descontado automaticamente entre uma saída e a próxima entrada.</p>
+  ${lab.map((l,i)=>`<div class="row" style="margin:4px 0"><span class="sp mut" style="font-size:13px">${l}</span><input type="time" data-hh="${i}" value="${atuais[i]||''}"></div>`).join('')}
+  <div class="mut" id="hh-tot" style="margin-top:8px"></div><div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn" id="hh-c">Cancelar</button><button class="btn pri" id="hh-ok">Salvar</button></div></div>`;
+  document.body.appendChild(o);
+  const calc=()=>{const v=[...o.querySelectorAll('[data-hh]')].map(i=>i.value);let tot=0,ok=true,prev=-1,txt=[];
+    for(let k=0;k<6;k+=2){const a=v[k],b=v[k+1];if(!a&&!b)continue;if(!a||!b){ok=false;break}let ma=+a.slice(0,2)*60+ +a.slice(3),mb=+b.slice(0,2)*60+ +b.slice(3);while(ma<prev)ma+=1440;while(mb<ma)mb+=1440;prev=mb;tot+=mb-ma;txt.push(a,b)}
+    if(k0(v)) ok=false;return {ok:ok&&txt.length>=2,tot,txt}};
+  const k0=v=>{const f=v.map(x=>!!x);for(let k=0;k<6;k+=2){if(!f[k]&&!f[k+1]&&f.slice(k+2).some(Boolean))return true}return false};
+  const show=()=>{const r=calc();o.querySelector('#hh-tot').innerHTML=r.ok?`Total trabalhado: <b>${fmtH(r.tot)}</b>`:'<span style="color:var(--bad)">Complete os pares de entrada e saída</span>'};
+  o.querySelectorAll('[data-hh]').forEach(i=>i.oninput=show);show();
+  o.querySelector('#hh-c').onclick=()=>o.remove();
+  o.querySelector('#hh-ok').onclick=()=>{const r=calc();if(!r.ok)return toast('Complete os pares de entrada e saída');onOk(r.tot,r.txt.join(' '));o.remove()};
+}
 async function vExtras(){
   const ini='2025-12-29',fim=new Date(new Date(hojeOperacional()+'T12:00:00').getTime()-864e5).toISOString().slice(0,10);
-  const [sem,rev,bx]=await Promise.all([rpc('pt_extras_semanas',{p_ini:ini,p_fim:fim}),rpc('pt_extras_revisar',{p_ini:ini,p_fim:fim}),sb.from('pt_extras_baixa').select('*').order('criado_em',{ascending:false})]);
+  const [sem,rev,bx,ajq]=await Promise.all([rpc('pt_extras_semanas',{p_ini:ini,p_fim:fim}),rpc('pt_extras_revisar',{p_ini:ini,p_fim:fim}),sb.from('pt_extras_baixa').select('*').order('criado_em',{ascending:false}),sb.from('pt_extras_ajuste').select('*')]);
+  const ajs={};(ajq.data||[]).forEach(a=>{ajs[a.colaborador_id+'|'+a.dia]=a});
   const baixas=bx.data||[],por={};
   (sem||[]).forEach(r=>{const o=por[r.colaborador_id]||(por[r.colaborador_id]={id:r.colaborador_id,nome:r.nome,ext:0,sem:[],est:0,pen:0,bx:0});o.ext+=r.extra_min;o.est+=r.estimados;o.pen+=r.pendentes;if(r.extra_min>0)o.sem.push(r)});
   baixas.forEach(b=>{const o=por[b.colaborador_id]||(por[b.colaborador_id]={id:b.colaborador_id,nome:(S.colabs.find(c=>c.id===b.colaborador_id)||{}).nome||'—',ext:0,sem:[],est:0,pen:0,bx:0});o.bx+=b.minutos});
@@ -323,9 +340,9 @@ async function vExtras(){
   <button class="btn pri" style="margin-top:10px;width:100%" data-baixa="${o.id}" ${saldo>0?'':'disabled'}>Registrar pagamento</button></div>`}).join('')||'<div class="card mut">Nenhuma hora extra apurada.</div>';
   h+=`<h3 style="margin-top:22px">Dias para revisar</h3><p class="mut">Estimados já entram na conta. Se o horário real for diferente, informe as horas trabalhadas; para não contar o dia, use Abonar.</p>
   <div class="row" style="margin-bottom:8px"><select id="ex-f"><option value="extras" ${filtro==='extras'?'selected':''}>Só quem tem hora extra</option><option value="todos" ${filtro==='todos'?'selected':''}>Todos os colaboradores</option></select><select id="ex-e"><option value="todos" ${est==='todos'?'selected':''}>Todos</option><option value="estimado" ${est==='estimado'?'selected':''}>Estimados</option><option value="pendente" ${est==='pendente'?'selected':''}>Pendentes</option><option value="feitos" ${est==='feitos'?'selected':''}>Já ajustados</option></select><span class="mut">${revF.length} dia(s)</span></div>`;
-  h+=revF.slice(0,150).map(r=>`<div class="card"><div class="row"><div class="sp"><b>${esc(r.nome)}</b> · ${dow(r.dia)} ${dm(r.dia)}<div class="mut">Batidas: ${esc(r.batidas)}</div>${r.motivo?`<div class="mut">${esc(r.motivo)}</div>`:''}</div>
+  h+=revF.slice(0,150).map(r=>`<div class="card"><div class="row"><div class="sp"><b>${esc(r.nome)}</b> · ${dow(r.dia)} ${dm(r.dia)}<div class="mut">Batidas: ${esc(r.batidas)}</div>${r.motivo?`<div class="mut">${esc(r.motivo)}</div>`:''}${(ajs[r.colaborador_id+'|'+r.dia]||{}).horarios?`<div class="mut">Horários corrigidos: ${esc(ajs[r.colaborador_id+'|'+r.dia].horarios)}</div>`:''}</div>
   <div style="text-align:right"><span class="badge ${r.estado==='pendente'?'b-falta':r.estado==='estimado'?'b-incompleto':'b-completo'}">${r.estado}</span><div><b>${r.minutos===null?'—':fmtH(r.minutos)}</b></div></div></div>
-  <div class="row" style="margin-top:8px;justify-content:flex-end">${['ajustado','abonado'].includes(r.estado)?`<button class="btn" data-un="${r.colaborador_id}|${r.dia}">Desfazer ajuste</button>`:`<button class="btn" data-hm="${r.colaborador_id}|${r.dia}">Informar horas</button><button class="btn red" data-ab="${r.colaborador_id}|${r.dia}">Abonar</button>`}</div></div>`).join('')||'<div class="card mut">Nenhum dia nesta lista.</div>';
+  <div class="row" style="margin-top:8px;justify-content:flex-end">${['ajustado','abonado'].includes(r.estado)?`<button class="btn" data-un="${r.colaborador_id}|${r.dia}">Desfazer ajuste</button>`:`<button class="btn" data-hm="${r.colaborador_id}|${r.dia}">Corrigir horários</button><button class="btn red" data-ab="${r.colaborador_id}|${r.dia}">Abonar</button>`}</div></div>`).join('')||'<div class="card mut">Nenhum dia nesta lista.</div>';
   if(revF.length>150)h+=`<p class="mut">Mostrando 150 de ${revF.length}. Use os filtros para refinar.</p>`;
   return {html:h,bind(){
     const ok=r=>{if(r.error){toast(r.error.message);return false}return true};
@@ -333,7 +350,7 @@ async function vExtras(){
     document.querySelectorAll('[data-baixa]').forEach(b=>b.onclick=()=>{const o=por[b.dataset.baixa];modalBaixa(o.nome,o.ext-o.bx,async(m,t,obs)=>{if(ok(await sb.from('pt_extras_baixa').insert({colaborador_id:o.id,minutos:m,tipo:t,obs}))){toast('Baixa registrada ✔');render()}})});
     document.querySelectorAll('[data-delbx]').forEach(b=>b.onclick=async()=>{if(!confirm('Desfazer esta baixa?'))return;if(ok(await sb.from('pt_extras_baixa').delete().eq('id',b.dataset.delbx)))render()});
     document.querySelectorAll('[data-ab]').forEach(b=>b.onclick=async()=>{const [c,d]=b.dataset.ab.split('|');if(ok(await sb.from('pt_extras_ajuste').upsert({colaborador_id:c,dia:d,tipo:'abonar',minutos:null},{onConflict:'colaborador_id,dia'}))){toast('Dia abonado ✔');render()}});
-    document.querySelectorAll('[data-hm]').forEach(b=>b.onclick=async()=>{const [c,d]=b.dataset.hm.split('|');const t=prompt('Quanto tempo trabalhou nesse dia (já sem o descanso)? Ex.: 8:00','8:00');if(t===null)return;const m=parseH(t);if(m===null||m>16*60)return toast('Horas inválidas');if(ok(await sb.from('pt_extras_ajuste').upsert({colaborador_id:c,dia:d,tipo:'minutos',minutos:m},{onConflict:'colaborador_id,dia'}))){toast('Ajustado ✔');render()}});
+    document.querySelectorAll('[data-hm]').forEach(b=>b.onclick=()=>{const [c,d]=b.dataset.hm.split('|');const r=revF.find(x=>x.colaborador_id===c&&x.dia===d);modalHorarios(`${r.nome} · ${dow(d)} ${dm(d)}`,(r.batidas||'').split(' ').filter(Boolean),async(m,txt)=>{if(ok(await sb.from('pt_extras_ajuste').upsert({colaborador_id:c,dia:d,tipo:'minutos',minutos:m,horarios:txt},{onConflict:'colaborador_id,dia'}))){toast('Horários salvos ✔');render()}})});
     document.querySelectorAll('[data-un]').forEach(b=>b.onclick=async()=>{const [c,d]=b.dataset.un.split('|');if(ok(await sb.from('pt_extras_ajuste').delete().eq('colaborador_id',c).eq('dia',d)))render()});
   }};
 }
