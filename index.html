@@ -71,6 +71,13 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;p
 .flex2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:640px){th.h,td.h{display:none}.flex2{grid-template-columns:1fr}.hero .big{font-size:54px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.rg details{background:#fff;border:2px solid var(--k);border-radius:14px;margin:10px 0;padding:0}
+.rg summary{cursor:pointer;font-weight:800;padding:13px 14px;list-style:none;display:flex;gap:8px;align-items:center}
+.rg summary::-webkit-details-marker{display:none}.rg summary::after{content:'＋';margin-left:auto;font-size:18px}.rg details[open] summary::after{content:'－'}
+.rg .bd{padding:0 14px 14px;line-height:1.5}.rg .ex{background:#fff6dc;border-left:5px solid var(--y);border-radius:8px;padding:8px 11px;margin:8px 0}
+.rg table{width:100%;border-collapse:collapse;margin:8px 0}.rg td,.rg th{padding:6px 8px;border-bottom:1px solid #eadfb8;text-align:left}
+.tag{font-size:11px;font-weight:800;border-radius:999px;padding:2px 9px}.tag.on{background:#d9f2e3;color:var(--ok)}.tag.soon{background:#ffe9bd;color:var(--warn)}
 </style>
 </head>
 <body>
@@ -148,17 +155,71 @@ async function init(){
   const {data:ac}=await sb.from('pt_acesso').select('papel').limit(1);
   if(!ac||!ac.length){await sb.auth.signOut();telaLogin('Este login não tem acesso de gerente. Se você é colaborador, volte e escolha "Sou colaborador".');return}
   S.papel=ac[0].papel;S.uid=session.user.id;S.email=session.user.email||'';
-  if(!['ranking','erros','pendentes','dias','colabs','extras','tipos','sync'].includes(S.tab))S.tab='ranking';
+  if(!['ranking','erros','pendentes','dias','colabs','extras','tipos','regras','sync'].includes(S.tab))S.tab='ranking';
   const [c,cf,t]=await Promise.all([sb.from('pt_colaboradores').select('*').order('nome'),sb.from('pt_config').select('*').eq('id',1).single(),sb.from('pt_tipos_erro').select('*').order('nome')]);
   S.colabs=c.data||[];S.cfg=cf.data;S.tipos=t.data||[];
   await loadFotos();
   render();
 }
 
+/* ---------- regras (dono, gerente e colaborador) ---------- */
+function regrasHtml(adm){
+  const C=S.cfg||{},tol=C.tolerancia_atraso_min??5,iv=C.intervalo_min??30,ivt=C.intervalo_tolerancia_min??2;
+  const pp=C.pts_presenca??2,pt=C.pts_pontualidade??3,pi=C.pts_intervalo??2,po=C.pts_obrigacoes??3,tot=pp+pt+pi+po;
+  const sec=(ico,tit,tag,corpo)=>`<details><summary><span>${ico}</span>${tit}${tag?` <span class="tag ${tag==='Em vigor'?'on':'soon'}">${tag}</span>`:''}</summary><div class="bd">${corpo}</div></details>`;
+  let h=`<div class="rg"><div class="card hero"><div style="font-size:34px">📖</div><h2 style="margin:4px 0">Regras da Premiação</h2><p class="mut">Tudo o que vale ponto, o que tira ponto e como a sua nota é calculada. Toque em cada título para abrir.</p></div>`;
+  h+=sec('🎯','Como funciona, em resumo','Em vigor',`<p>Todo mês você tem uma <b>nota de 0 a 10</b>. Ela mostra, em um número só, como foi o seu mês: se você chegou no horário, fez o descanso certo, cumpriu suas obrigações e evitou erros.</p>
+  <p>As notas formam o <b>ranking do mês</b>. Quem fica em <b>1º lugar</b> ganha o prêmio do mês. O objetivo é simples: <b>trabalhar com capricho, no horário e sem erro</b>, ajudando o time inteiro a crescer.</p>
+  <div class="ex">Você acompanha tudo pelo app, com o mesmo login do RH: sua nota, o ranking e os avisos de erro.</div>`);
+  h+=sec('🔟','Quanto vale cada dia','Em vigor',`<p>Cada dia trabalhado vale <b>${tot} pontos</b>, divididos em quatro partes:</p>
+  <table><tr><th>Parte</th><th>Pontos</th><th>O que você precisa fazer</th></tr>
+  <tr><td>🕒 Presença</td><td><b>${pp}</b></td><td>Bater as 4 batidas do dia</td></tr>
+  <tr><td>⏰ Pontualidade</td><td><b>${pt}</b></td><td>Chegar no horário</td></tr>
+  <tr><td>🍽️ Intervalo</td><td><b>${pi}</b></td><td>Fazer o descanso com o tempo certo</td></tr>
+  <tr><td>🧹 Obrigações</td><td><b>${po}</b></td><td>Fazer o pré-preparo e o fechamento direito</td></tr></table>
+  <p>Você <b>começa cada dia com os pontos de obrigações</b> e só perde se algo ficar errado. Os outros pontos vêm do relógio de ponto, de forma automática.</p>`);
+  h+=sec('🕒','Presença: as 4 batidas','Em vigor',`<p>Em um dia normal você bate o ponto <b>4 vezes</b>: <b>entrada</b>, <b>saída para o descanso</b>, <b>volta do descanso</b> e <b>saída</b>. Com as 4 batidas você garante os <b>${pp} pontos</b> de presença.</p>
+  <div class="ex"><b>Esqueceu de bater?</b> Se faltar qualquer batida, esse dia perde os pontos de presença. Por isso, sempre confira se o relógio registrou. Se esquecer, avise seu gerente no mesmo dia.</div>
+  <p class="mut">Detalhes: o dia de trabalho vai das <b>5h da manhã às 5h do dia seguinte</b>, então quem fecha depois da meia-noite continua no mesmo dia. Se você bater duas vezes seguidas em menos de 1 minuto, o sistema conta uma só.</p>`);
+  h+=sec('⏰','Pontualidade: chegar no horário','Em vigor',`<p>Cada pessoa tem o seu horário de entrada. Você tem <b>${tol} minutos de tolerância</b>. Chegando dentro dela, ganha os <b>${pt} pontos</b>. Passou disso, perde os ${pt} pontos daquele dia.</p>
+  <div class="ex">Entrada às <b>07:00</b>: bater até <b>07:05</b> está certo. Bater às <b>07:06</b> conta como atraso e perde os pontos do dia.</div>
+  <p>Chegar antes não dá ponto extra, mas também não atrapalha. O que vale é a primeira batida do dia.</p>`);
+  h+=sec('🍽️','Intervalo: descansar o tempo certo','Em vigor',`<p>O descanso precisa ter o <b>tempo combinado</b>, nem mais, nem menos, com margem de <b>${ivt} minutos</b> para cima ou para baixo.</p>
+  <table><tr><th>Turno</th><th>Descanso</th><th>Vale ponto se ficar entre</th></tr><tr><td>Noite e demais</td><td>${iv} min</td><td>${iv-ivt} e ${iv+ivt} min</td></tr><tr><td>Manhã</td><td>60 min</td><td>${60-ivt} e ${60+ivt} min</td></tr></table>
+  <div class="ex">Descanso de 30 min: voltar com <b>31 min</b> está certo. Voltar com <b>40 min</b> perde os ${pi} pontos do intervalo.</div>
+  <p>Descansar menos também perde ponto. O intervalo é um direito seu, e o tempo certo protege você e a empresa.</p>`);
+  h+=sec('🧹','Obrigações: pré-preparo e fechamento','Em vigor',`<p>Cada função tem suas obrigações, como o <b>pré-preparo</b> e o <b>fechamento</b> (limpeza, organização, guardar tudo do jeito certo). Fazer tudo direito vale <b>${po} pontos por dia</b>, e você já começa com eles.</p>
+  <p>Quando algo não é feito ou fica mal feito, o líder ou o gerente <b>registra um erro</b> com foto e descrição, e os pontos saem da sua nota do mês (veja a seção seguinte).</p>
+  <div class="ex">Cumpriu tudo? <b>Nada acontece</b> e os pontos seguem com você.</div>`);
+  h+=sec('📸','Erros: foto, aviso e pontos descontados','Em vigor',`<p>Quando um erro acontece, o líder ou o gerente registra no app, com <b>foto e descrição</b>. Você recebe o aviso no seu login e confirma com o botão <b>"Estou ciente"</b>. Assim todo mundo aprende rápido e o erro não se repete.</p>
+  <table><tr><th>Tamanho do erro</th><th>Desconta</th><th>Exemplos</th></tr><tr><td>Leve</td><td><b>−1</b></td><td>Esquecer de etiquetar, bancada desorganizada</td></tr><tr><td>Médio</td><td><b>−2</b></td><td>Fechamento mal feito, hambúrguer fora do padrão</td></tr><tr><td>Grave</td><td><b>−5</b></td><td>Falha de higiene ou segurança, desperdício grande</td></tr></table>
+  <p class="mut">Os tipos e pontos de cada erro ficam em Tipos de erro, com o dono.</p>`);
+  h+=sec('🧮','Como a nota é calculada','Em vigor',`<p>A nota do mês é: <b>(pontos que você fez − pontos de erros) ÷ pontos possíveis × 10</b>. Nunca fica abaixo de 0.</p>
+  <div class="ex"><b>Exemplo:</b> em 20 dias, os pontos possíveis são 20 × ${tot} = <b>${20*tot}</b>. Você fez ${20*tot-10} (perdeu 10 por um atraso e um intervalo) e teve 1 erro médio (−2).<br>Nota = (${20*tot-10} − 2) ÷ ${20*tot} × 10 = <b>${((20*tot-12)/(20*tot)*10).toFixed(1).replace('.',',')}</b></div>
+  <p>Só contam os dias em que você <b>trabalhou ou faltou</b>. Folga não entra na conta.</p>`);
+  h+=sec('📅','Folga, falta e dia sem batida','Em vigor',`<p><b>Folga:</b> dia marcado como folga não conta nada, nem a favor nem contra.</p>
+  <p><b>Falta:</b> o dia conta como <b>zero</b> de ${tot} pontos e puxa a sua nota para baixo. Se você tem um motivo (atestado, por exemplo), fale com o gerente para ele avaliar.</p>
+  <p><b>Dia sem batida e sem marcação:</b> fica <b>pendente</b> até o gerente marcar se foi folga ou falta. Nada é descontado antes disso.</p>`);
+  h+=sec('✨','Limpeza do time: bônus ou desconto coletivo','Em breve',`<p>No fechamento, o líder avalia a limpeza da cozinha e do salão com uma nota. Ao fim do mês, a <b>média dessas notas vale para todo o time</b>:</p>
+  <table><tr><th>Média da limpeza</th><th>Efeito na nota de todos</th></tr><tr><td>9,0 ou mais</td><td><b>+0,5</b></td></tr><tr><td>7,0 a 8,9</td><td>sem mudança</td></tr><tr><td>abaixo de 7,0</td><td><b>−0,5</b></td></tr></table>
+  <p>O dia da <b>limpeza geral da semana</b> vale em dobro. A ideia é simples: se todos cuidam, todos ganham.</p>`);
+  h+=sec('🏆','Prêmio do mês','Em vigor',`<p>O <b>1º lugar</b> do ranking de cada mês ganha:</p><div class="ex">💵 <b>R$ 100,00</b><br>🎬 <b>2 ingressos de cinema</b></div><p class="mut">Em caso de empate, vale o critério combinado com a gerência.</p>`);
+  h+=sec('💡','Dúvidas comuns','',`<p><b>Meu ponto foi registrado errado.</b> Fale com seu gerente no mesmo dia. Ele pode ajustar.</p><p><b>Recebi um erro que acho injusto.</b> Converse com seu líder ou gerente. O registro tem foto e descrição para ajudar a entender o que houve.</p><p><b>Quando atualiza minha nota?</b> O relógio sincroniza a cada poucos minutos e o dia fecha às 5h da manhã seguinte.</p>`);
+  if(adm){
+    h+=`<h3 style="margin-top:22px">🔒 Só para o dono e a gerência</h3>`;
+    h+=sec('💰','Cofre Star (14º): proposta em definição','Em breve',`<p class="mut">Esta seção <b>não aparece para os colaboradores</b> enquanto as regras não forem fechadas.</p>
+    <ul><li>Vale em <b>novembro e dezembro de 2026</b>; zera e recomeça em 2027.</li><li>Cada mês de meta cumprida guarda <b>1/12 do salário</b> no cofre.</li><li>Meta cheia: nota ≥ 8,0, <b>zero atrasos</b> e nenhum erro grave. Meia meta (1/24): nota ≥ 7,0 com 1 ou 2 atrasos. Abaixo disso, nada no mês.</li><li><b>Qualquer falta</b> tira o valor de 2 meses do saldo (o dono pode abonar caso a caso).</li><li>Só recebe quem tem pelo menos 6 meses de casa e continua até dezembro.</li></ul>
+    <p class="mut">Atenção legal: prêmio habitual pode ser tratado como salário. Registre um regulamento escrito e valide com o contador ou advogado antes de divulgar, principalmente sobre penalizar faltas por atestado.</p>`);
+    h+=sec('👔','Líderes e gerente','Em breve',`<p>A avaliação de líderes e do gerente está sendo definida e será incluída aqui.</p>`);
+    h+=sec('⚙️','Onde mudar os números','',`<p>Pontos por parte, tolerâncias e descanso estão na configuração do sistema. Tipos e pontos de erro ficam em <b>Tipos de erro</b>; horário de entrada, saída e descanso de cada pessoa em <b>Equipe</b>.</p>`);
+  }
+  return h+'</div>';
+}
+
 /* ---------- visão do gerente / dono ---------- */
 function shell(inner){
   const adm=S.papel==='admin';
-  const tabs=[['ranking','🏆 Ranking'],['erros','📸 Erros'],['pendentes','⏳ Pendentes'],['dias','📅 Dias']].concat(adm?[['colabs','👥 Equipe'],['extras','⏱️ Horas extras'],['tipos','⚙️ Tipos de erro']]:[]).concat([['sync','🔌 Sistema']]);
+  const tabs=[['ranking','🏆 Ranking'],['erros','📸 Erros'],['pendentes','⏳ Pendentes'],['dias','📅 Dias']].concat(adm?[['colabs','👥 Equipe'],['extras','⏱️ Horas extras'],['tipos','⚙️ Tipos de erro']]:[]).concat([['regras','📖 Regras'],['sync','🔌 Sistema']]);
   $app.innerHTML=`<header>${logoHtml()}<h1>Premiação 99Burgers</h1><span class="who">${adm?'dono':'gerente'}</span><button id="out">Sair</button></header>
   <nav>${tabs.map(([k,l])=>`<button data-t="${k}" class="${S.tab===k?'on':''}">${l}</button>`).join('')}</nav><main>${inner}</main>`;
   document.getElementById('out').onclick=sair;
@@ -168,7 +229,7 @@ const mesBar=()=>`<div class="row" style="margin-bottom:12px;justify-content:cen
 function mesBind(){document.getElementById('mp').onclick=()=>{S.mes=addMes(S.mes,-1);render()};document.getElementById('mn').onclick=()=>{S.mes=addMes(S.mes,1);render()}}
 async function render(){
   shell('<p class="mut">Carregando…</p>');
-  const f={ranking:vRanking,erros:vErros,pendentes:vPendentes,dias:vDias,colabs:vColabs,extras:vExtras,tipos:vTipos,sync:vSync}[S.tab];
+  const f={ranking:vRanking,erros:vErros,pendentes:vPendentes,dias:vDias,colabs:vColabs,extras:vExtras,tipos:vTipos,regras:vRegras,sync:vSync}[S.tab];
   const r=await f();const m=document.querySelector('main');m.innerHTML=r.html;r.bind&&r.bind();animar(m);
 }
 
@@ -355,6 +416,7 @@ async function vExtras(){
   }};
 }
 
+async function vRegras(){return {html:regrasHtml(true)}}
 async function vTipos(){
   let h=`<p class="mut">Os tipos de erro que o gerente pode escolher, com os pontos que cada um desconta. Ex.: “Hambúrguer fora do padrão” = 1 ponto.</p>
   <div class="card"><div class="row"><input id="t-nome" placeholder="Nome do erro" style="flex:1;min-width:180px"><input id="t-pts" type="number" min="1" max="10" value="1" style="width:80px"><button class="btn pri" id="t-add">Adicionar</button></div></div>`;
@@ -372,19 +434,22 @@ async function vSync(){
   return {html:`<div class="card"><div class="row"><b>Relógio de ponto</b><span class="badge ${ok?'b-completo':'b-falta'}">${ok?'sincronizando':'ATENÇÃO'}</span></div>
   <p>Última sincronização: <b>${q?q.toLocaleString('pt-BR'):'nunca'}</b>${min!==null?` (há ${min} min)`:''}</p>
   <p class="mut">${s?s.total_batidas.toLocaleString('pt-BR'):0} batidas no total. ${ok?'':'Se passar de 15 min, confira se o PC do restaurante está ligado e na rede do relógio.'}</p></div>
-  <div class="card"><b>Regras em uso</b><p class="mut">Atraso: mais de ${S.cfg.tolerancia_atraso_min} min após a entrada. Intervalo: ${S.cfg.intervalo_min} min ±${S.cfg.intervalo_tolerancia_min}. Pontos do relógio por dia: ${S.cfg.pts_presenca} presença + ${S.cfg.pts_pontualidade} pontualidade + ${S.cfg.pts_intervalo} intervalo. Cada erro registrado desconta pontos do mês. Dia de trabalho: das ${S.cfg.corte_hora}h às ${S.cfg.corte_hora}h. Pontuação desde ${S.cfg.inicio_pontuacao.split('-').reverse().join('/')}.</p></div>`};
+  <div class="card"><b>Regras em uso</b><p class="mut">Atraso: mais de ${S.cfg.tolerancia_atraso_min} min após a entrada. Intervalo: ${S.cfg.intervalo_min} min ±${S.cfg.intervalo_tolerancia_min}. Pontos do relógio por dia: ${S.cfg.pts_presenca} presença + ${S.cfg.pts_pontualidade} pontualidade + ${S.cfg.pts_intervalo} intervalo + ${S.cfg.pts_obrigacoes} obrigações. Cada erro registrado desconta pontos do mês. Dia de trabalho: das ${S.cfg.corte_hora}h às ${S.cfg.corte_hora}h. Pontuação desde ${S.cfg.inicio_pontuacao.split('-').reverse().join('/')}.</p></div>`};
 }
 
 /* ---------- visão do colaborador ---------- */
+const abasColab=()=>`<div class="row" style="margin-bottom:12px;justify-content:center"><button class="btn ${S.colabAba==='regras'?'':'pri'}" id="ab1">🏆 Minha nota</button><button class="btn ${S.colabAba==='regras'?'pri':''}" id="ab2">📖 Regras</button></div>`;
+function abasBind(){document.getElementById('ab1').onclick=()=>{S.colabAba='nota';renderColab()};document.getElementById('ab2').onclick=()=>{S.colabAba='regras';renderColab()}}
 async function renderColab(){
   $app.innerHTML=`<header>${logoHtml()}<h1>Minha Premiação</h1><button id="out">Sair</button></header><main><p class="mut">Carregando…</p></main>`;
   document.getElementById('out').onclick=sair;
+  if(S.colabAba==='regras'){const mm=document.querySelector('main');mm.innerHTML=abasColab()+regrasHtml(false);abasBind();return}
   const {data:{session}}=await rh.auth.getSession();
   let r,j;try{r=await fetch(SB_URL+'/functions/v1/meu-painel',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token,apikey:SB_KEY},body:JSON.stringify({mes:S.mes})});j=await r.json()}catch(e){j={erro:'Sem conexão'}}
   const m=document.querySelector('main');
   if(!r||!r.ok){m.innerHTML=`<div class="card alerta"><b>Não consegui abrir sua Premiação.</b><p>${esc(j.erro||'erro')}</p><button class="btn" id="vt">Voltar</button></div>`;document.getElementById('vt').onclick=sair;return}
   const novos=j.ocorrencias.filter(o=>!o.ciente_em);
-  let h='';
+  let h=abasColab();
   if(novos.length){h+=novos.map(o=>`<div class="card alerta"><b>⚠️ Novo erro registrado</b><div style="margin-top:4px"><b>${esc(o.tipo_nome)}</b> <span class="badge b-falta">−${o.pontos} pt</span></div><div>${esc(o.descricao||'')}</div><div class="mut">${dm(o.data)}</div>${o.foto?`<img class="foto" src="${esc(o.foto)}" data-z="${esc(o.foto)}" alt="foto do erro">`:''}<button class="btn ok" style="margin-top:12px;width:100%;padding:12px" data-ci="${o.id}">Estou ciente</button></div>`).join('')}
   h+=`<div class="card hero">${avatar(j.eu.foto,j.eu.nome,'lg').replace('class="av lg"','class="av lg" style="margin:0 auto 8px;border-color:#E8A32C"')}<div class="mut">${esc(j.eu.nome.split(' ')[0])}${j.eu.cargo?' · '+esc(j.eu.cargo):''}</div><div class="mut" style="text-transform:capitalize">${nomeMes(j.mes)}</div>
   ${j.meu&&j.meu.nota!==null?`<div class="big" data-count="${j.meu.nota}">0</div><div class="mut">de 10 pontos</div>`:'<div class="big">—</div><div class="mut">sua nota aparece quando houver dias pontuados</div>'}</div>`;
@@ -397,7 +462,7 @@ async function renderColab(){
   if(j.meu){h+=`<div class="card"><b>Como está sua nota</b><div class="chips"><span class="chip">${j.meu.pts}/${j.meu.pts_max} pts do ponto</span><span class="chip ${j.meu.atrasos?'bad':''}">${j.meu.atrasos} atraso(s)</span><span class="chip ${j.meu.faltas?'bad':''}">${j.meu.faltas} falta(s)</span><span class="chip ${j.meu.intervalos_errados?'bad':''}">${j.meu.intervalos_errados} intervalo(s) errado(s)</span><span class="chip ${j.meu.erros?'bad':''}">${j.meu.erros} erro(s) · −${j.meu.pts_erros}</span></div></div>`}
   const ja=j.ocorrencias.filter(o=>o.ciente_em);
   if(ja.length)h+=`<h3>Meus erros do mês</h3>`+ja.map(o=>`<div class="card"><div class="row" style="align-items:flex-start">${o.foto?`<img class="thumb" src="${esc(o.foto)}" data-z="${esc(o.foto)}" alt="foto">`:''}<div class="sp"><b>${esc(o.tipo_nome)}</b> <span class="badge b-falta">−${o.pontos}</span><div class="mut">${esc(o.descricao||'')}</div><div class="mut">${dm(o.data)}</div></div></div></div>`).join('');
-  m.innerHTML=h;animar(m);
+  m.innerHTML=h;animar(m);abasBind();
   document.getElementById('mp').onclick=()=>{S.mes=addMes(S.mes,-1);renderColab()};document.getElementById('mn').onclick=()=>{S.mes=addMes(S.mes,1);renderColab()};
   m.querySelectorAll('[data-z]').forEach(i=>i.onclick=()=>zoomFoto(i.dataset.z));
   m.querySelectorAll('[data-ci]').forEach(b=>b.onclick=async()=>{b.disabled=true;await fetch(SB_URL+'/functions/v1/meu-painel',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token,apikey:SB_KEY},body:JSON.stringify({acao:'ciente',id:b.dataset.ci})});toast('Obrigado! Vamos melhorar juntos 💪');renderColab()});
