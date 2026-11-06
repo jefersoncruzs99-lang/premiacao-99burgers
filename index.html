@@ -155,7 +155,7 @@ async function init(){
   const {data:ac}=await sb.from('pt_acesso').select('papel').limit(1);
   if(!ac||!ac.length){await sb.auth.signOut();telaLogin('Este login não tem acesso de gerente. Se você é colaborador, volte e escolha "Sou colaborador".');return}
   S.papel=ac[0].papel;S.uid=session.user.id;S.email=session.user.email||'';
-  if(!['ranking','erros','pendentes','dias','colabs','extras','tipos','regras','sync'].includes(S.tab))S.tab='ranking';
+  if(!['ranking','erros','pendentes','dias','colabs','extras','tipos','regras','conferencia','funcoes','sync'].includes(S.tab))S.tab='ranking';
   const [c,cf,t]=await Promise.all([sb.from('pt_colaboradores').select('*').order('nome'),sb.from('pt_config').select('*').eq('id',1).single(),sb.from('pt_tipos_erro').select('*').order('nome')]);
   S.colabs=c.data||[];S.cfg=cf.data;S.tipos=t.data||[];
   await loadFotos();
@@ -219,7 +219,7 @@ function regrasHtml(adm){
 /* ---------- visão do gerente / dono ---------- */
 function shell(inner){
   const adm=S.papel==='admin';
-  const tabs=[['ranking','🏆 Ranking'],['erros','📸 Erros'],['pendentes','⏳ Pendentes'],['dias','📅 Dias']].concat(adm?[['colabs','👥 Equipe'],['extras','⏱️ Horas extras'],['tipos','⚙️ Tipos de erro']]:[]).concat([['regras','📖 Regras'],['sync','🔌 Sistema']]);
+  const tabs=[['ranking','🏆 Ranking'],['conferencia','✅ Conferência'],['erros','📸 Erros'],['pendentes','⏳ Pendentes'],['dias','📅 Dias'],['funcoes','📋 Funções']].concat(adm?[['colabs','👥 Equipe'],['extras','⏱️ Horas extras'],['tipos','⚙️ Tipos de erro']]:[]).concat([['regras','📖 Regras'],['sync','🔌 Sistema']]);
   $app.innerHTML=`<header>${logoHtml()}<h1>Premiação 99Burgers</h1><span class="who">${adm?'dono':'gerente'}</span><button id="out">Sair</button></header>
   <nav>${tabs.map(([k,l])=>`<button data-t="${k}" class="${S.tab===k?'on':''}">${l}</button>`).join('')}</nav><main>${inner}</main>`;
   document.getElementById('out').onclick=sair;
@@ -229,7 +229,7 @@ const mesBar=()=>`<div class="row" style="margin-bottom:12px;justify-content:cen
 function mesBind(){document.getElementById('mp').onclick=()=>{S.mes=addMes(S.mes,-1);render()};document.getElementById('mn').onclick=()=>{S.mes=addMes(S.mes,1);render()}}
 async function render(){
   shell('<p class="mut">Carregando…</p>');
-  const f={ranking:vRanking,erros:vErros,pendentes:vPendentes,dias:vDias,colabs:vColabs,extras:vExtras,tipos:vTipos,regras:vRegras,sync:vSync}[S.tab];
+  const f={ranking:vRanking,erros:vErros,pendentes:vPendentes,dias:vDias,colabs:vColabs,extras:vExtras,tipos:vTipos,regras:vRegras,conferencia:vConf,funcoes:vFuncoes,sync:vSync}[S.tab];
   const r=await f();const m=document.querySelector('main');m.innerHTML=r.html;r.bind&&r.bind();animar(m);
 }
 
@@ -417,6 +417,97 @@ async function vExtras(){
 }
 
 async function vRegras(){return {html:regrasHtml(true)}}
+/* ---------- funções, tarefas e conferência ---------- */
+const GRAV={leve:'leve · −1',medio:'médio · −2',grave:'grave · −5'};
+const grupoDia=d=>[1,2,3,4].includes(new Date(d+'T12:00:00').getDay())?'seg-qui':'sex-dom';
+const hhmm=t=>t?String(t).slice(0,5):'';
+const RES={ok:['ok','b-completo'],mal:['mal feito','b-incompleto'],nao:['não feito','b-falta'],fora:['fora do controle','b-pendente']};
+function modalConf(titulo,rotulo,cands,onOk){
+  const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;overflow:auto';
+  o.innerHTML=`<div class="card" style="max-width:420px;width:100%"><b>${esc(rotulo)}</b><div class="mut" style="margin-bottom:8px">${esc(titulo)}</div>
+  <div class="mut" style="font-weight:700">Quem era o responsável?</div>${cands.map(c=>`<label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" data-cc="${c.id}" ${cands.length===1?'checked':''}> ${esc(c.nome)}</label>`).join('')}
+  <textarea id="cf-obs" rows="2" placeholder="O que aconteceu? (opcional)" style="width:100%;margin-top:8px"></textarea>
+  <label class="mut" style="display:block;margin-top:8px">📸 Foto (recomendado)<input id="cf-foto" type="file" accept="image/*" capture="environment" style="display:block;margin-top:4px"></label>
+  <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn" id="cf-c">Cancelar</button><button class="btn pri" id="cf-ok">Registrar</button></div></div>`;
+  document.body.appendChild(o);o.querySelector('#cf-c').onclick=()=>o.remove();
+  o.querySelector('#cf-ok').onclick=async ev=>{const ids=[...o.querySelectorAll('[data-cc]:checked')].map(i=>i.dataset.cc);if(!ids.length)return toast('Marque quem era o responsável');ev.target.disabled=true;await onOk(o.querySelector('#cf-obs').value.trim()||null,o.querySelector('#cf-foto').files[0]||null,ids);o.remove()};
+}
+async function vConf(){
+  S.cfData=S.cfData||hojeOperacional();S.cfTipo=S.cfTipo||'abertura';
+  const {data:fx}=await sb.from('pt_funcoes').select('*').eq('ativo',true).order('ordem');const funcs=fx||[];
+  if(!funcs.length)return {html:'<div class="card mut">Nenhuma função cadastrada ainda.</div>'};
+  if(!funcs.find(f=>f.id===S.cfFuncao))S.cfFuncao=funcs[0].id;
+  const grp=grupoDia(S.cfData);
+  const {data:cks}=await sb.from('pt_checklists').select('*').eq('funcao_id',S.cfFuncao).eq('tipo',S.cfTipo).eq('ativo',true).in('dias',[grp,'todos']);
+  const ck=(cks||[])[0];
+  const head=`<div class="card"><div class="row"><input type="date" id="cf-d" value="${S.cfData}"><select id="cf-f">${funcs.map(f=>`<option value="${f.id}" ${f.id===S.cfFuncao?'selected':''}>${esc(f.nome)}</option>`).join('')}</select></div>
+  <div class="row" style="margin-top:8px"><button class="btn ${S.cfTipo==='abertura'?'pri':''}" data-tp="abertura">☀️ Abertura</button><button class="btn ${S.cfTipo==='fechamento'?'pri':''}" data-tp="fechamento">🌙 Fechamento</button><span class="mut">${dow(S.cfData)} ${dm(S.cfData)} · lista de ${grp==='seg-qui'?'segunda a quinta':'sexta a domingo'}</span></div></div>`;
+  const bindHead=()=>{document.getElementById('cf-d').onchange=e=>{if(e.target.value){S.cfData=e.target.value;render()}};document.getElementById('cf-f').onchange=e=>{S.cfFuncao=e.target.value;render()};document.querySelectorAll('[data-tp]').forEach(b=>b.onclick=()=>{S.cfTipo=b.dataset.tp;render()})};
+  if(!ck)return {html:head+`<div class="card mut">Esta função não tem lista de ${S.cfTipo} para este dia da semana.</div>`,bind:bindHead};
+  const {data:po}=await sb.from('pt_postos').select('*').eq('checklist_id',ck.id).order('ordem');const postos=po||[];
+  const [ta,al,ci]=await Promise.all([sb.from('pt_tarefas').select('*').eq('checklist_id',ck.id).eq('ativo',true).order('ordem'),postos.length?sb.from('pt_alocacao').select('*').eq('data',S.cfData).in('posto_id',postos.map(x=>x.id)):{data:[]},sb.from('pt_conf_itens').select('*').eq('data',S.cfData)]);
+  const tarefas=ta.data||[],aloc=al.data||[],conf=Object.fromEntries((ci.data||[]).map(c=>[c.tarefa_id,c]));
+  const nomeC=id=>(S.colabs.find(c=>c.id===id)||{}).nome||'—';
+  const feitos=tarefas.filter(t=>conf[t.id]).length,falhas=tarefas.filter(t=>conf[t.id]&&['mal','nao'].includes(conf[t.id].resultado)).length;
+  let h=head;
+  h+=`<div class="card"><div class="row"><b>Conferência</b><span class="sp"></span><span class="chip">${feitos}/${tarefas.length} conferidas</span><span class="chip ${falhas?'bad':''}">${falhas} com falha</span></div><div class="bar"><i data-w="${tarefas.length?Math.round(feitos/tarefas.length*100):0}"></i></div></div>`;
+  h+=`<h3>Quem está na função hoje</h3><p class="mut">Marque quem ocupa cada posto. É essa pessoa que responde pelas tarefas do posto.</p>`;
+  const livres=S.colabs.filter(c=>c.ativo);
+  h+=postos.map(x=>{const ocup=aloc.filter(a=>a.posto_id===x.id);return `<div class="card"><div class="row"><b>${esc(x.nome)}</b><span class="sp"></span><select data-add="${x.id}"><option value="">+ adicionar pessoa</option>${livres.filter(c=>!aloc.some(a=>a.colaborador_id===c.id&&a.posto_id===x.id)).map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('')}</select></div>
+  <div class="chips">${ocup.map(a=>`<span class="chip">${esc(nomeC(a.colaborador_id))} <a href="#" data-rm="${x.id}|${a.colaborador_id}" style="text-decoration:none">✕</a></span>`).join('')||'<span class="mut">ninguém marcado</span>'}</div></div>`}).join('');
+  const grupos=[['',`Todos`],...postos.map(x=>[x.id,x.nome])];
+  h+=`<h3>Tarefas</h3>`;
+  grupos.forEach(([pid,nm])=>{
+    const lista=tarefas.filter(t=>(t.posto_id||'')===pid);if(!lista.length)return;
+    const resp=pid?aloc.filter(a=>a.posto_id===pid):aloc;const nomes=[...new Set(resp.map(a=>nomeC(a.colaborador_id)))];
+    h+=`<div class="card"><b>${esc(nm)}</b><div class="mut">${nomes.length?'Responsável: '+esc(nomes.join(', ')):'⚠️ sem responsável marcado'}</div>`;
+    let ult=null;
+    lista.forEach(t=>{const c=conf[t.id];
+      if(t.momento!==ult){ult=t.momento;h+=`<div class="mut" style="margin-top:12px;font-weight:800">${esc(t.momento||'')}${t.hora_ini?' · '+hhmm(t.hora_ini)+(t.hora_fim?'–'+hhmm(t.hora_fim):''):''}</div>`}
+      h+=`<div style="padding:8px 0;border-bottom:1px solid #eadfb8"><div class="row"><div class="sp"><b>${esc(t.titulo)}</b>${t.detalhe?`<div class="mut">${esc(t.detalhe)}</div>`:''}</div>${c?`<span class="badge ${RES[c.resultado][1]}">${RES[c.resultado][0]}</span>`:''}</div>
+      <div class="row" style="margin-top:6px"><button class="btn ${c&&c.resultado==='ok'?'ok':''}" data-r="${t.id}|ok">✅ Ok</button><button class="btn ${c&&c.resultado==='mal'?'red':''}" data-r="${t.id}|mal">⚠️ Mal feito</button><button class="btn ${c&&c.resultado==='nao'?'red':''}" data-r="${t.id}|nao">❌ Não feito</button><button class="btn" data-r="${t.id}|fora">🚧 Fora do controle</button></div></div>`});
+    h+='</div>'});
+  return {html:h,bind(){
+    bindHead();
+    const ok=r=>{if(r.error){toast(r.error.message);return false}return true};
+    document.querySelectorAll('[data-add]').forEach(sel=>sel.onchange=async()=>{if(!sel.value)return;if(ok(await sb.from('pt_alocacao').insert({data:S.cfData,posto_id:sel.dataset.add,colaborador_id:sel.value})))render()});
+    document.querySelectorAll('[data-rm]').forEach(a=>a.onclick=async e=>{e.preventDefault();const [pid,cid]=a.dataset.rm.split('|');if(ok(await sb.from('pt_alocacao').delete().eq('data',S.cfData).eq('posto_id',pid).eq('colaborador_id',cid)))render()});
+    document.querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{
+      const [tid,res]=b.dataset.r.split('|'),t=tarefas.find(x=>x.id===tid);
+      if(res==='ok'||res==='fora'){try{await rpc('pt_conferir',{p_data:S.cfData,p_tarefa:tid,p_resultado:res,p_obs:null,p_foto:null,p_colabs:[]});render()}catch(e){}return}
+      const resp=t.posto_id?aloc.filter(a=>a.posto_id===t.posto_id):aloc,cands=[...new Map(resp.map(a=>[a.colaborador_id,{id:a.colaborador_id,nome:nomeC(a.colaborador_id)}])).values()];
+      if(!cands.length)return toast('Marque quem está na função (acima) antes de apontar uma falha');
+      modalConf(t.titulo,res==='nao'?'❌ Não feito':'⚠️ Mal feito',cands,async(obs,file,ids)=>{
+        let path=null;
+        try{if(file){const blob=await comprimir(file),pth=`obrigacoes/${S.cfData}/${crypto.randomUUID()}.jpg`;const up=await sb.storage.from('pt-fotos').upload(pth,blob,{contentType:'image/jpeg'});if(up.error)throw up.error;path=pth}
+          await rpc('pt_conferir',{p_data:S.cfData,p_tarefa:tid,p_resultado:res,p_obs:obs,p_foto:path,p_colabs:ids});toast('Registrado ✔ A pessoa será avisada');render()}catch(e){toast('Falhou: '+(e.message||e))}
+      });
+    });
+  }};
+}
+async function vFuncoes(){
+  const adm=S.papel==='admin';
+  const [fx,ck,po,ta]=await Promise.all([sb.from('pt_funcoes').select('*').order('ordem'),sb.from('pt_checklists').select('*').order('tipo').order('dias'),sb.from('pt_postos').select('*').order('ordem'),sb.from('pt_tarefas').select('*').order('ordem')]);
+  const F=fx.data||[],C=ck.data||[],P=po.data||[],T=ta.data||[];
+  let h=`<p class="mut">As obrigações de cada função, com horário e peso do erro. ${adm?'Você pode ajustar o peso, desativar ou acrescentar tarefas.':'Somente o dono altera esta lista.'}</p>`;
+  h+=F.map(f=>`<div class="card"><h3 style="margin:0 0 6px">${esc(f.nome)}</h3>`+C.filter(c=>c.funcao_id===f.id).map(c=>{
+    const tc=T.filter(t=>t.checklist_id===c.id),pc=P.filter(x=>x.checklist_id===c.id);
+    return `<details style="margin:8px 0"><summary style="cursor:pointer;font-weight:800">${c.tipo==='abertura'?'☀️':'🌙'} ${esc(c.titulo)} <span class="chip">${tc.filter(t=>t.ativo).length} tarefas</span></summary>
+    ${c.observacao?`<div class="mut" style="margin:6px 0">${esc(c.observacao)}</div>`:''}
+    ${[{id:null,nome:'Todos'},...pc].map(x=>{const l=tc.filter(t=>(t.posto_id||null)===x.id);if(!l.length)return '';return `<div style="margin-top:10px"><b>${esc(x.nome)}</b>${l.map(t=>`<div class="row" style="padding:5px 0;border-bottom:1px solid #eadfb8;${t.ativo?'':'opacity:.45'}"><div class="sp">${t.hora_ini?`<span class="mut">${hhmm(t.hora_ini)}${t.hora_fim?'–'+hhmm(t.hora_fim):''} · </span>`:`<span class="mut">${esc(t.momento||'')} · </span>`}${esc(t.titulo)}${t.detalhe?`<div class="mut">${esc(t.detalhe)}</div>`:''}</div>
+    ${adm?`<select data-g="${t.id}">${['leve','medio','grave'].map(g=>`<option value="${g}" ${t.gravidade===g?'selected':''}>${GRAV[g]}</option>`).join('')}</select><button class="btn" data-ed="${t.id}">Editar</button><button class="btn ${t.ativo?'red':''}" data-tg="${t.id}">${t.ativo?'Desativar':'Ativar'}</button>`:`<span class="badge b-pendente">${GRAV[t.gravidade]}</span>`}</div>`).join('')}</div>`}).join('')}
+    ${adm?`<button class="btn" style="margin-top:10px" data-new="${c.id}">+ Adicionar tarefa</button>`:''}</details>`}).join('')+`</div>`).join('')||'<div class="card mut">Nenhuma função cadastrada.</div>';
+  return {html:h,bind(){
+    const ok=r=>{if(r.error){toast(r.error.message);return false}return true};
+    document.querySelectorAll('[data-g]').forEach(s2=>s2.onchange=async()=>{if(ok(await sb.from('pt_tarefas').update({gravidade:s2.value}).eq('id',s2.dataset.g)))toast('Peso salvo ✔')});
+    document.querySelectorAll('[data-tg]').forEach(b=>b.onclick=async()=>{const t=T.find(x=>x.id===b.dataset.tg);if(ok(await sb.from('pt_tarefas').update({ativo:!t.ativo}).eq('id',t.id)))render()});
+    document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=async()=>{const t=T.find(x=>x.id===b.dataset.ed);const n=prompt('Nome da tarefa:',t.titulo);if(n===null||!n.trim())return;const d=prompt('Detalhe (opcional):',t.detalhe||'');if(d===null)return;if(ok(await sb.from('pt_tarefas').update({titulo:n.trim(),detalhe:d.trim()||null}).eq('id',t.id)))render()});
+    document.querySelectorAll('[data-new]').forEach(b=>b.onclick=async()=>{const cid=b.dataset.new,pc=P.filter(x=>x.checklist_id===cid);const n=prompt('Nome da nova tarefa:');if(!n||!n.trim())return;let pid=null;if(pc.length>1||(pc.length===1)){const op=pc.map((x,i)=>`${i+1} = ${x.nome}`).join(' · ');const r=prompt(`Para quem é? Digite o número (${op}) ou deixe em branco para Todos:`,'');if(r===null)return;if(r.trim()){const k=pc[parseInt(r,10)-1];if(!k)return toast('Número inválido');pid=k.id}}
+      const g=(prompt('Peso do erro: leve, medio ou grave','leve')||'leve').trim().toLowerCase();if(!['leve','medio','grave'].includes(g))return toast('Peso inválido');
+      const ord=Math.max(0,...T.filter(t=>t.checklist_id===cid).map(t=>t.ordem))+1;if(ok(await sb.from('pt_tarefas').insert({checklist_id:cid,posto_id:pid,momento:'Outras',titulo:n.trim(),gravidade:g,ordem:ord})))render()});
+  }};
+}
+
 async function vTipos(){
   let h=`<p class="mut">Os tipos de erro que o gerente pode escolher, com os pontos que cada um desconta. Ex.: “Hambúrguer fora do padrão” = 1 ponto.</p>
   <div class="card"><div class="row"><input id="t-nome" placeholder="Nome do erro" style="flex:1;min-width:180px"><input id="t-pts" type="number" min="1" max="10" value="1" style="width:80px"><button class="btn pri" id="t-add">Adicionar</button></div></div>`;
