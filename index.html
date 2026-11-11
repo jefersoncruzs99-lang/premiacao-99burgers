@@ -204,7 +204,7 @@ function regrasHtml(adm){
   <table><tr><th>Média da limpeza</th><th>Efeito na nota de todos</th></tr><tr><td>9,0 ou mais</td><td><b>+0,5</b></td></tr><tr><td>7,0 a 8,9</td><td>sem mudança</td></tr><tr><td>abaixo de 7,0</td><td><b>−0,5</b></td></tr></table>
   <p>O dia da <b>limpeza geral da semana</b> vale em dobro. A ideia é simples: se todos cuidam, todos ganham.</p>`);
   h+=sec('🏆','Prêmio do mês','Em vigor',`<p>O <b>1º lugar</b> do ranking de cada mês ganha:</p><div class="ex">💵 <b>R$ 100,00</b><br>🎬 <b>2 ingressos de cinema</b></div><p class="mut">Em caso de empate, vale o critério combinado com a gerência.</p>`);
-  h+=sec('💡','Dúvidas comuns','',`<p><b>Meu ponto foi registrado errado.</b> Fale com seu gerente no mesmo dia. Ele pode ajustar.</p><p><b>Recebi um erro que acho injusto.</b> Converse com seu líder ou gerente. O registro tem foto e descrição para ajudar a entender o que houve.</p><p><b>Quando atualiza minha nota?</b> O relógio sincroniza a cada poucos minutos e o dia fecha às 5h da manhã seguinte.</p>`);
+  h+=sec('💡','Dúvidas comuns','',`<p><b>Meu ponto foi registrado errado.</b> Fale com seu gerente no mesmo dia. Ele pode ajustar.</p><p><b>Recebi um erro que acho injusto.</b> Converse com seu líder ou gerente. O registro tem foto e descrição para ajudar a entender o que houve.</p><p><b>Quando atualiza minha nota?</b> As batidas chegam ao app uma vez por dia, de madrugada, e o dia fecha às 5h. Por isso a nota de ontem aparece na manhã seguinte.</p>`);
   if(adm){
     h+=`<h3 style="margin-top:22px">🔒 Só para o dono e a gerência</h3>`;
     h+=sec('💰','Cofre Star (14º): proposta em definição','Em breve',`<p class="mut">Esta seção <b>não aparece para os colaboradores</b> enquanto as regras não forem fechadas.</p>
@@ -521,10 +521,10 @@ async function vTipos(){
 }
 
 async function vSync(){
-  const {data}=await sb.from('pt_sync').select('*').limit(1);const s=data?.[0],q=s?new Date(s.ultima_sync):null,min=q?Math.round((Date.now()-q.getTime())/60000):null,ok=min!==null&&min<=15;
+  const {data}=await sb.from('pt_sync').select('*').limit(1);const s=data?.[0],q=s?new Date(s.ultima_sync):null,min=q?Math.round((Date.now()-q.getTime())/60000):null,ok=min!==null&&min<=1560;
   return {html:`<div class="card"><div class="row"><b>Relógio de ponto</b><span class="badge ${ok?'b-completo':'b-falta'}">${ok?'sincronizando':'ATENÇÃO'}</span></div>
   <p>Última sincronização: <b>${q?q.toLocaleString('pt-BR'):'nunca'}</b>${min!==null?` (há ${min} min)`:''}</p>
-  <p class="mut">${s?s.total_batidas.toLocaleString('pt-BR'):0} batidas no total. ${ok?'':'Se passar de 15 min, confira se o PC do restaurante está ligado e na rede do relógio.'}</p></div>
+  <p class="mut">${s?s.total_batidas.toLocaleString('pt-BR'):0} batidas no total. ${ok?'':'A sincronização roda 1 vez por dia (de madrugada). Se passar de 26 horas, confira se o PC do restaurante está ligado e na rede do relógio.'}</p></div>
   <div class="card"><b>Regras em uso</b><p class="mut">Atraso: mais de ${S.cfg.tolerancia_atraso_min} min após a entrada. Intervalo: ${S.cfg.intervalo_min} min ±${S.cfg.intervalo_tolerancia_min}. Pontos do relógio por dia: ${S.cfg.pts_presenca} presença + ${S.cfg.pts_pontualidade} pontualidade + ${S.cfg.pts_intervalo} intervalo + ${S.cfg.pts_obrigacoes} obrigações. Cada erro registrado desconta pontos do mês. Dia de trabalho: das ${S.cfg.corte_hora}h às ${S.cfg.corte_hora}h. Pontuação desde ${S.cfg.inicio_pontuacao.split('-').reverse().join('/')}.</p></div>`};
 }
 
